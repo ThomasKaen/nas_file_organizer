@@ -1,5 +1,6 @@
 from __future__ import annotations
 import re
+import logging
 from pathlib import Path
 from datetime import datetime
 from typing import Iterable, Optional, Tuple
@@ -9,6 +10,21 @@ from .models import Options, Rule, RuleMatch, RuleAction, Result
 from .io_utils import list_files, read_text_any, next_available, render_template
 
 yaml = YAML(typ="safe")
+_log = None
+
+def get_log() -> logging.Logger:
+    global _log
+    if _log is None:
+        log_path = Path("logs/organizer.log")
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        logging.basicConfig(
+            filename=log_path,
+            filemode="a",
+            format="%(asctime)s %(levelname)s %(message)s",
+            level=logging.INFO,
+        )
+        _log = logging.getLogger("nas_organizer")
+    return _log
 
 def _as_str(val, field: str, rule_name: str) -> str:
     if isinstance(val, list):
@@ -127,22 +143,32 @@ class OrganizerService:
 
         return score, first_kw
 
-    def classify(self, path: Path, text: str, rules: list[Rule]) -> tuple[Optional[Rule], Optional[str]]:
+    def classify(self, path: Path, text: str, rules: list[Rule], opts: Options | None = None) -> tuple[
+        Optional[Rule], Optional[str]]:
         ext = path.suffix.lower().lstrip(".")
-        best: tuple[float, int, Optional[Rule], Optional[str]] = (-1.0, -10**9, None, None)  # (score, priority, rule, first_kw)
+        best: tuple[float, int, Optional[Rule], Optional[str]] = (-1.0, -10 ** 9, None, None)
+        second: tuple[float, int, Optional[Rule], Optional[str]] = (-1.0, -10 ** 9, None, None)
 
         for rule in rules:
             m = rule.match
             if m.filetypes and ext not in m.filetypes:
                 continue
-            score, first_kw = self._score_rule(text, rule, self.opts.title_lines)
+            score, first_kw = self._score_rule(text, rule, opts) if opts else self._score_rule(text, rule)
             if score >= m.min_score:
-                # pick best by (score, priority)
+                tup = (score, m.priority, rule, first_kw)
                 if (score > best[0]) or (score == best[0] and m.priority > best[1]):
-                    best = (score, m.priority, rule, first_kw)
-            if getattr(self, "trace", False):
-                print(f"[TRACE] {path.name} rule={rule.name} score={score:.2f} min={m.min_score} prio={m.priority}")
+                    second = best
+                    best = tup
+                elif (score > second[0]) or (score == second[0] and m.priority > second[1]):
+                    second = tup
 
+        # if no match
+        if not best[2]:
+            return None, None
+
+        # conflict threshold: if scores are effectively equal (within 0.25), mark for review
+        if second[2] is not None and abs(best[0] - second[0]) < 0.25:
+            return None, None  # signal "no confident match" → plan() will route to Review
 
         return best[2], best[3]
 
@@ -160,7 +186,12 @@ class OrganizerService:
             )
             rule, first_kw = self.classify(p, text, opts.rules)
             if not rule:
-                yield Result(src=p, dst=None, rule=None, ok=True, reason="no_match", text_excerpt=text[:200])
+                # Send to Review folder instead of pure no_match
+                ts = datetime.fromtimestamp(p.stat().st_mtime)
+                review_dir = opts.archive_root / "_Review" / f"{ts.year}-{ts.month:02d}-{ts.day:02d}"
+                review_dir.mkdir(parents=True, exist_ok=True)
+                dst = next_available(review_dir / p.name)
+                yield Result(src=p, dst=dst, rule=None, ok=True, reason="review", text_excerpt=text[:200])
                 continue
             ts = datetime.fromtimestamp(p.stat().st_mtime)
             dst_dir = Path(render_template(rule.action.move_to, original=p.name, date=ts, archive_root=opts.archive_root, first_keyword=first_kw))
@@ -170,13 +201,30 @@ class OrganizerService:
             yield Result(src=p, dst=dst, rule=rule.name, ok=True, text_excerpt=text[:200])
 
     def execute(self, opts: Options) -> Iterable[Result]:
+        log = get_log()
         for r in self.plan(opts):
             if not r.dst or r.reason == "no_match":
+                log.info("SKIP   %s (%s)", r.src, r.reason or "no_match")
                 yield r
                 continue
             try:
                 if not opts.dry_run:
+                    r.dst.parent.mkdir(parents=True, exist_ok=True)
                     r.src.replace(r.dst)
+
+                if r.reason == "review":
+                    log.info("REVIEW %s -> %s", r.src, r.dst)
+                else:
+                    log.info("MOVED  %s -> %s", r.src, r.dst)
+
                 yield r
             except Exception as e:
-                yield Result(src=r.src, dst=r.dst, rule=r.rule, ok=False, reason=str(e), text_excerpt=r.text_excerpt)
+                log.error("ERROR  %s -> %s (%s)", r.src, r.dst, str(e))
+                yield Result(
+                    src=r.src,
+                    dst=r.dst,
+                    rule=r.rule,
+                    ok=False,
+                    reason=str(e),
+                    text_excerpt=r.text_excerpt,
+                )

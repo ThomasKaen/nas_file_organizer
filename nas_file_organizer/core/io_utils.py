@@ -9,6 +9,8 @@ from PIL import Image
 import pytesseract
 from docx import Document
 from openpyxl import load_workbook
+from .cache import get_text as cache_get, set_text as cache_set
+
 
 def list_files(folder: Path) -> Iterable[Path]:
     for p in folder.rglob("*"):
@@ -23,22 +25,46 @@ def read_text_any(
     page_window_last: int = 1,
     ocr_on_empty_text: bool = True,
 ) -> str:
+    cached = cache_get(path)
+    if cached is not None:
+        return cached
     try:
         if path.stat().st_size > skip_large_mb * 1024 * 1024:
             return ""
     except Exception:
         pass
     ext = path.suffix.lower()
+
     if ext == ".pdf":
-        return _pdf_text(path, ocr_lang, page_window_first, page_window_last, ocr_on_empty_text)
+        text = _pdf_text(path, ocr_lang, page_window_first, page_window_last, ocr_on_empty_text)
+        if text.strip():
+            cache_set(path, text)
+        return text
+
     if ext in {".txt", ".log", ".md"}:
-        return _txt_text(path)
+        text = _txt_text(path)
+        if text.strip():
+            cache_set(path, text)
+        return text
+
     if ext == ".docx":
-        return _docx_text(path)
+        text = _docx_text(path)
+        if text.strip():
+            cache_set(path, text)
+        return text
+
     if ext == ".xlsx":
-        return _xlsx_text(path)
-    if ext in {".png",".jpg",".jpeg",".tiff",".bmp",".webp"}:
-        return _image_ocr(path, ocr_lang)
+        text = _xlsx_text(path)
+        if text.strip():
+            cache_set(path, text)
+        return text
+
+    if ext in {".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".webp"}:
+        text = _image_ocr(path, ocr_lang)
+        if text.strip():
+            cache_set(path, text)
+        return text
+
     return ""
 
 def _pdf_text(path: Path, ocr_lang: str, first_n: int, last_n: int, ocr_on_empty: bool) -> str:
