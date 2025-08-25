@@ -1,26 +1,39 @@
 inbox: "C:/Users/Tamas/Documents/Python/Freelance/Testing/nas_file_organizer/Inbox"          # change to a real test folder
 archive_root: "C:/Users/Tamas/Documents/Python/Freelance/Testing/nas_file_organizer/Archive" # change to a real test folder
 
+defaults:
+  # Scan only where it matters
+  page_window: { first: 2, last: 1 }  # first 2 pages + last 1 page
+  ocr_on_empty_text: true             # only OCR a page if PDF text layer is empty
+  ocr_languages: "eng"                # you can do "eng+hun" later
+  dry_run: true
+  skip_large_mb: 50
+
 rules:
   - name: invoices
     match:
-      any_keywords: ["invoice", "amount due", "factura"]
-      regex: null
-      filetypes: ["pdf", "jpg", "png"]
-      min_fuzzy: 80
+      any_keywords: ["invoice", "factura", "rechnung"]
+      filetypes: ["pdf","jpg","png","jpeg"]
+      fuzzy_min: 82                 # 0..100 RapidFuzz threshold
+      patterns:                     # structural cues
+        - "(?i)invoice\\s*(no|number)\\s*[:#]?"
+        - "(?i)(subtotal|vat|total)\\s*[:]?\\s*[€$£]?[\\d.,]+"
+      min_score: 2                  # need at least this score to match
+      title_weight: 2.0             # hits in title count more
+      body_weight: 1.0
+      priority: 50                  # breaks ties vs other rules
     action:
       move_to: "{archive_root}/Invoices/{year}/{month}"
-      rename:  "{date}_{first_keyword}_{original}"
+      rename: "{date}_{first_keyword}_{original}"
 
   - name: contracts
     match:
       regex: "(?i)contract|agreement"
       filetypes: ["pdf","docx"]
+      min_score: 1
+      title_weight: 2.0
+      body_weight: 1.0
+      priority: 40
     action:
       move_to: "{archive_root}/Contracts"
-      rename:  "{original}"
-
-defaults:
-  ocr_languages: "eng"
-  dry_run: true              # start safe; change to false to actually move
-  skip_large_mb: 50
+      rename: "{original}"

@@ -1,6 +1,9 @@
-import pytesseract
-from PIL import Image
+import fitz
+from pathlib import Path
 
-img = Image.open("Screenshot 2025-08-24 101240.png")
-text = pytesseract.image_to_string(img, lang="eng")
-print(text)
+p = Path("C:/Users/Tamas/Documents/Python/Freelance/Testing/nas_file_organizer/Inbox/Invoice 1 - Tamas Kiss.pdf")
+doc = fitz.open(p)
+print("Pages:", len(doc))
+for i, page in enumerate(doc):
+    print("Page", i+1, "text:")
+    print(page.get_text("text")[:200])

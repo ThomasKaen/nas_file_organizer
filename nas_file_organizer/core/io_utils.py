@@ -1,10 +1,10 @@
 from __future__ import annotations
 import io
 from pathlib import Path
-from typing import Iterable, Iterator
 from datetime import datetime
+from typing import Iterable, Sequence
 import chardet
-import fitz
+import fitz                         # PyMuPDF
 from PIL import Image
 import pytesseract
 from docx import Document
@@ -15,7 +15,14 @@ def list_files(folder: Path) -> Iterable[Path]:
         if p.is_file():
             yield p
 
-def read_text_any(path: Path, ocr_lang: str="eng", skip_large_mb: int = 50) -> str:
+def read_text_any(
+    path: Path,
+    ocr_lang: str = "eng",
+    skip_large_mb: int = 50,
+    page_window_first: int = 2,
+    page_window_last: int = 1,
+    ocr_on_empty_text: bool = True,
+) -> str:
     try:
         if path.stat().st_size > skip_large_mb * 1024 * 1024:
             return ""
@@ -23,32 +30,38 @@ def read_text_any(path: Path, ocr_lang: str="eng", skip_large_mb: int = 50) -> s
         pass
     ext = path.suffix.lower()
     if ext == ".pdf":
-        return _pdf_text(path, ocr_lang)
+        return _pdf_text(path, ocr_lang, page_window_first, page_window_last, ocr_on_empty_text)
     if ext in {".txt", ".log", ".md"}:
         return _txt_text(path)
     if ext == ".docx":
         return _docx_text(path)
     if ext == ".xlsx":
         return _xlsx_text(path)
-    if ext in {".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".webp"}:
+    if ext in {".png",".jpg",".jpeg",".tiff",".bmp",".webp"}:
         return _image_ocr(path, ocr_lang)
-    return ""  # unknown types
+    return ""
 
-
-
-def _pdf_text(path: Path, ocr_lang: str) -> str:
+def _pdf_text(path: Path, ocr_lang: str, first_n: int, last_n: int, ocr_on_empty: bool) -> str:
     try:
         doc = fitz.open(path)
-        text_pages = []
-        for page in doc:
+        n = len(doc)
+        idxs: list[int] = list(range(min(first_n, n)))
+        # add last pages if requested and not overlapping
+        for i in range(max(0, n - last_n), n):
+            if i not in idxs:
+                idxs.append(i)
+
+        parts: list[str] = []
+        for i in idxs:
+            page = doc[i]
             t = page.get_text("text") or ""
-            if not t.strip():
-                # OCR the page image if no text layer
+            if (not t.strip()) and ocr_on_empty:
+                # low-DPI probe OCR (fast). If you want, bump to 300 later on poor results.
                 pix = page.get_pixmap(dpi=200)
                 img = Image.open(io.BytesIO(pix.tobytes("png")))
                 t = pytesseract.image_to_string(img, lang=ocr_lang)
-            text_pages.append(t)
-        return "\n".join(text_pages)
+            parts.append(t)
+        return "\n".join(parts)
     except Exception:
         return ""
 
