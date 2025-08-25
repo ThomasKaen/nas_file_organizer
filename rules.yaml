@@ -1,0 +1,26 @@
+inbox: "C:/Users/You/Inbox"          # change to a real test folder
+archive_root: "C:/Users/You/Archive" # change to a real test folder
+
+rules:
+  - name: invoices
+    match:
+      any_keywords: ["invoice", "amount due", "factura"]
+      regex: null
+      filetypes: ["pdf", "jpg", "png"]
+      min_fuzzy: 80
+    action:
+      move_to: "{archive_root}/Invoices/{year}/{month}"
+      rename:  "{date}_{first_keyword}_{original}"
+
+  - name: contracts
+    match:
+      regex: "(?i)contract|agreement"
+      filetypes: ["pdf","docx"]
+    action:
+      move_to: "{archive_root}/Contracts"
+      rename:  "{original}"
+
+defaults:
+  ocr_languages: "eng"
+  dry_run: true              # start safe; change to false to actually move
+  skip_large_mb: 50

@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nas_file_organizer"
+version = "0.1.0"
+description = "Content-aware file sorter with OCR for NAS"
+authors = [{name = "Tamas Kiss", email = "thomas.kaen.freelance@gmail.com"}]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pymupdf>=1.24",        # PDF text
+  "pytesseract>=0.3.10",  # OCR (needs Tesseract installed to OCR images)
+  "Pillow>=10.0",         # imaging for OCR
+  "python-docx>=1.1",     # DOCX text
+  "openpyxl>=3.1",        # XLSX text
+  "chardet>=5.2",         # robust TXT decode
+  "ruyaml>=0.91",         # YAML rules
+  "rapidfuzz>=3.9",       # fuzzy match
+  "watchdog>=4.0",        # (later) folder watcher
+  "rich>=13.7"            # nicer CLI output
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "mypy"]
+
+[project.scripts]
+nas_file_organizer = "nas_file_organizer.adapters.gui_tk:main"
