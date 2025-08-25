@@ -72,18 +72,19 @@ class OrganizerService:
             page_window_last=last,
             dry_run=bool(defaults.get("dry_run", True)),
             skip_large_mb=int(defaults.get("skip_large_mb", 50)),
+            title_lines=int(defaults.get("title_lines", 5)),
         )
 
     # --- scoring & classification
 
-    def _score_rule(self, text: str, rule: Rule) -> Tuple[float, Optional[str]]:
+    def _score_rule(self, text: str, rule: Rule, title_n: int) -> Tuple[float, Optional[str]]:
         """Return (score, first_keyword_hit)."""
         m = rule.match
 
         # Split text into title (first 5 lines) and body (rest)
         lines = text.splitlines()
-        title = "\n".join(lines[:5]) if lines else ""
-        body = "\n".join(lines[5:]) if len(lines) > 5 else ""
+        title = "\n".join(lines[:title_n])
+        body = "\n".join(lines[title_n:])
 
         score = 0.0
         first_kw: Optional[str] = None
@@ -134,11 +135,14 @@ class OrganizerService:
             m = rule.match
             if m.filetypes and ext not in m.filetypes:
                 continue
-            score, first_kw = self._score_rule(text, rule)
+            score, first_kw = self._score_rule(text, rule, self.opts.title_lines)
             if score >= m.min_score:
                 # pick best by (score, priority)
                 if (score > best[0]) or (score == best[0] and m.priority > best[1]):
                     best = (score, m.priority, rule, first_kw)
+            if getattr(self, "trace", False):
+                print(f"[TRACE] {path.name} rule={rule.name} score={score:.2f} min={m.min_score} prio={m.priority}")
+
 
         return best[2], best[3]
 

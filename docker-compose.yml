@@ -1,0 +1,14 @@
+services:
+  organizer:
+    build: .
+    container_name: nas-organizer
+    volumes:
+      # Map NAS folders into the container
+      - /absolute/path/to/Inbox:/data/inbox
+      - /absolute/path/to/Archive:/data/archive
+      # Map config and logs
+      - ./rules.yaml:/app/rules.yaml
+      - ./logs:/app/logs
+    environment:
+      - TZ=Europe/London
+    restart: unless-stopped

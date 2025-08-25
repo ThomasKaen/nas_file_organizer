@@ -37,6 +37,7 @@ class Options:
     page_window_last: int = 1
     dry_run: bool = True
     skip_large_mb: int = 50
+    title_lines: int = 5
 
 @dataclass
 class Result:

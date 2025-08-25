@@ -1,5 +1,5 @@
-inbox: "C:/Users/Tamas/Documents/Python/Freelance/Testing/nas_file_organizer/Inbox"          # change to a real test folder
-archive_root: "C:/Users/Tamas/Documents/Python/Freelance/Testing/nas_file_organizer/Archive" # change to a real test folder
+inbox: "/data/inbox"
+archive_root: "/data/archive"
 
 defaults:
   # Scan only where it matters
@@ -8,6 +8,7 @@ defaults:
   ocr_languages: "eng"                # you can do "eng+hun" later
   dry_run: true
   skip_large_mb: 50
+  title_lines: 5
 
 rules:
   - name: invoices

@@ -9,12 +9,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("-c", "--config", default="rules.yaml", help="Path to rules.yaml")
     p.add_argument("--execute", action="store_true", help="Execute moves (otherwise plan only)")
     p.add_argument("--dry-run", type=str, choices=["true","false"], help="Override dry_run from config")
+    p.add_argument("--trace", action="store_true", help="Print rule scores for debugging")
     return p.parse_args()
 
 def main():
     args = parse_args()
     console = Console()
     svc = OrganizerService()
+    svc.trace = args.trace
     cfg_path = Path(args.config)
     opts = svc.load_options(cfg_path)
     if args.dry_run is not None:
