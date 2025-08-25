@@ -1,24 +1,31 @@
-# Development Journal — NAS File Organizer
+2025-08-25 — 12-Hour Sprint, AI as Depth Multiplier
 
-## 2025-08-25
-- Personal note: 12-hour dev sprint, MVP → cache+logs, completed on 25/08/2025 @ 22:17
+Today was a breakthrough day, both technically and mentally.
 
-- Implemented **SQLite cache** for text extraction.
-  - Motivation: avoid repeated OCR (slow).
-  - Chose SQLite because it’s lightweight, file-based, and requires no server.
-  - Future: could also store **rulesets** per client in DB for multi-profile support.
+Technical milestones
 
-- Updated **logging** system.
-  - Added categories: `MOVED`, `REVIEW`, `SKIP`, `ERROR`.
-  - Review moves are treated like normal moves but flagged for user inspection.
-  - Logs go to `logs/organizer.log`.
+- Completed MVP → working file classifier with rules.yaml + OCR.
 
-- Reflections:
-  - Considering moving **rules** into the DB later for multi-client setups.
-  - Docker integration tested locally — containerized version is on the roadmap.
-  - Real-time watcher still experimental, but works for demos.
+- Integrated Tesseract (OCR).
 
-## 2025-08-25
-- MVP finished: OCR with Tesseract, rules.yaml parsing, classification + execution.
-- First working run with invoices recognized.
-- Next steps identified: caching, logging, review handling, Docker.
+- Refined scoring (title/body weighting).
+
+- Added Review folder for ambiguous matches.
+
+- Implemented SQLite cache → massive performance boost on reruns.
+
+- Added structured logging (MOVED/REVIEW/SKIP/ERROR).
+
+- Started proper project hygiene: CHANGELOG.md + this JOURNAL.md.
+
+What would normally take days or weeks came together in ~12 hours.
+
+Reflections
+
+- Even with AI generating the bulk of code, the process still required hours of integration, debugging, testing, decision-making. AI doesn’t replace the human role — it accelerates it.
+
+- The shift today was realizing my value isn’t in typing every line, but in directing, shaping, and steering. Typing is cheap; decisions and design are not.
+
+- AI compresses timelines. A “2-week scope” can shrink to 2 days. But instead of stopping early, this unlocks time for advanced features that would have normally taken months. In other words: AI doesn’t make projects shallower — it makes them potentially deeper.
+
+- The fear that “AI takes jobs” is misplaced. What it really does is increase data and decision points, requiring humans even more to define direction, resolve conflicts, and determine what matters.
