@@ -18,7 +18,7 @@ Content-aware file sorter with OCR for NAS (Synology/QNAP/Docker-friendly).
 On **2025-08-25**, the first test invoices were sorted automatically into archive folders.  
 
 **Demo run:**
-![CLI execution](docs/screenshot_demo.png)
+![CLI execution](docs/cli_mvp_test.png)
 
 As shown above:
 - Detected 2 invoices in the inbox
