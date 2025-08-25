@@ -1,5 +1,5 @@
-inbox: "C:/Users/You/Inbox"          # change to a real test folder
-archive_root: "C:/Users/You/Archive" # change to a real test folder
+inbox: "C:/Users/Tamas/Documents/Python/Freelance/Testing/nas_file_organizer/Inbox"          # change to a real test folder
+archive_root: "C:/Users/Tamas/Documents/Python/Freelance/Testing/nas_file_organizer/Archive" # change to a real test folder
 
 rules:
   - name: invoices

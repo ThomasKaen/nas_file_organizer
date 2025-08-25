@@ -7,29 +7,72 @@ from rapidfuzz import fuzz
 from ruyaml import YAML
 from .models import Options, Rule, RuleMatch, RuleAction, Result
 from .io_utils import list_files, read_text_any, next_available, render_template
+import logging
+from logging.handlers import RotatingFileHandler
 
 yaml = YAML(typ="safe")
+
+def _as_str(val, field: str, rule_name: str) -> str:
+    if isinstance(val, list):
+        if len(val) == 1 and isinstance(val[0], str):
+            return val[0]
+        raise ValueError(f'Rule "{rule_name}": field "{field}" must be a string, not a list.')
+    if isinstance(val, str):
+        return val
+    raise ValueError(f'Rule "{rule_name}": field "{field}" must be a string.')
+
+def _as_list_str(val, field: str, rule_name: str):
+    if val is None:
+        return None
+    if isinstance(val, str):
+        return [val]
+    if isinstance(val, list) and all(isinstance(x, str) for x in val):
+        return val
+    raise ValueError(f'Rule "{rule_name}": field "{field}" must be a string or list of strings.')
+
+def get_logger(log_path: Path) -> logging.Logger:
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    logger = logging.getLogger("nas_organizer")
+    if not logger.handlers:
+        handler = RotatingFileHandler(log_path, maxBytes=2_000_000, backupCount=3, encoding="utf-8")
+        fmt = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+        handler.setFormatter(fmt)
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+    return logger
 
 class OrganizerService:
     def load_options(self, rules_file: Path) -> Options:
         cfg = yaml.load(rules_file.read_text(encoding="utf-8"))
+
         rules: list[Rule] = []
         for r in cfg.get("rules", []):
+            name = r["name"]
             m = r.get("match", {})
             a = r.get("action", {})
+
+            any_keywords = _as_list_str(m.get("any_keywords"), "match.any_keywords", name)
+            filetypes    = _as_list_str(m.get("filetypes"),    "match.filetypes",    name)
+            regex        = m.get("regex")
+            min_fuzzy    = m.get("min_fuzzy")
+
+            move_to = _as_str(a.get("move_to"), "action.move_to", name)
+            rename  = _as_str(a.get("rename", "{original}"), "action.rename", name)
+
             rules.append(Rule(
-                name=r["name"],
+                name=name,
                 match=RuleMatch(
-                    any_keywords=m.get("any_keywords"),
-                    regex=m.get("regex"),
-                    filetypes=m.get("filetypes"),
-                    min_fuzzy=m.get("min_fuzzy"),
+                    any_keywords=any_keywords,
+                    regex=regex,
+                    filetypes=filetypes,
+                    min_fuzzy=min_fuzzy,
                 ),
                 action=RuleAction(
-                    move_to=a["move_to"],
-                    rename=a.get("rename", "{original}"),
+                    move_to=move_to,
+                    rename=rename,
                 )
             ))
+
         defaults = cfg.get("defaults", {})
         return Options(
             inbox=Path(cfg["inbox"]),
@@ -81,13 +124,18 @@ class OrganizerService:
             yield Result(src=p, dst=dst, rule=rule.name, ok=True, text_excerpt=text[:200])
 
     def execute(self, opts: Options) -> Iterable[Result]:
+        log = get_logger(Path("logs/organizer.log"))
         for r in self.plan(opts):
             if not r.dst or r.reason == "no_match":
+                if r.reason == "no_match":
+                    log.info("SKIP src=%s reason=no_match", r.src)
                 yield r
                 continue
             try:
                 if not opts.dry_run:
                     r.src.replace(r.dst)
+                log.info("MOVED src=%s dst=%s rule=%s", r.src, r.dst, r.rule)
                 yield r
             except Exception as e:
+                log.error("ERROR src=%s reason=%s", r.src, str(e))
                 yield Result(src=r.src, dst=r.dst, rule=r.rule, ok=False, reason=str(e), text_excerpt=r.text_excerpt)

@@ -25,5 +25,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest", "ruff", "mypy"]
 
+[tool.setuptools]
+packages = ["nas_file_organizer"]
+
 [project.scripts]
-nas_file_organizer = "nas_file_organizer.adapters.gui_tk:main"
+nas-organize = "nas_file_organizer.adapters.cli:main"

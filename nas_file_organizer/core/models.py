@@ -19,7 +19,7 @@ class RuleMatch:
 class Rule:
     name: str
     match: RuleMatch
-    actions: RuleAction
+    action: RuleAction
 
 @dataclass
 class Options:
