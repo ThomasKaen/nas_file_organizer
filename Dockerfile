@@ -11,3 +11,4 @@ RUN pip install --no-cache-dir -e .
 
 # Default command: execute once (batch). For a watcher container, swap to nas-watch.
 CMD ["nas-organize", "-c", "/app/rules.yaml", "--execute"]
+# CMD ["nas-web"]

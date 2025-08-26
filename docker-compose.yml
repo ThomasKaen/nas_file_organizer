@@ -2,6 +2,8 @@ services:
   organizer:
     build: .
     container_name: nas-organizer
+    #ports:
+    #  - "8000:8000"
     volumes:
       # Map NAS folders into the container
       - /absolute/path/to/Inbox:/data/inbox
