@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>NAS File Organizer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Tailwind via CDN for speed -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <div class="max-w-5xl mx-auto p-6">
+    <h1 class="text-2xl font-bold mb-2">NAS File Organizer</h1>
+    <p class="text-sm text-slate-600 mb-6">
+      Inbox: <span class="font-mono">{{ inbox }}</span> · Archive: <span class="font-mono">{{ archive }}</span> · Dry-run: <span class="font-mono">{{ 'true' if dry_run else 'false' }}</span>
+    </p>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-xl shadow p-4">
+        <div class="text-slate-500 text-sm">Planned</div>
+        <div class="text-3xl font-semibold">{{ count_plan }}</div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4">
+        <div class="text-slate-500 text-sm">Will Move</div>
+        <div class="text-3xl font-semibold text-emerald-600">{{ count_move }}</div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4">
+        <div class="text-slate-500 text-sm">No Match</div>
+        <div class="text-3xl font-semibold text-amber-600">{{ count_nomatch }}</div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4">
+        <div class="text-slate-500 text-sm">Review</div>
+        <div class="text-3xl font-semibold text-indigo-600">{{ count_review }}</div>
+      </div>
+    </div>
+
+    <form method="post" action="/run" class="flex gap-3 mb-6">
+      <input type="hidden" name="mode" value="execute" />
+      <button class="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Run Execute</button>
+      <a href="/" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300">Refresh</a>
+      <a href="/logs" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300">Open Logs</a>
+      <a href="/api/plan" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300">API: Plan JSON</a>
+    </form>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-white rounded-xl shadow p-4">
+        <h2 class="font-semibold mb-2">Recent Logs</h2>
+        <pre class="text-xs whitespace-pre-wrap leading-5 h-80 overflow-auto">{{ log_tail }}</pre>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4">
+        <h2 class="font-semibold mb-2">Review Folder (latest 50)</h2>
+        {% if reviews %}
+          <ul class="text-sm list-disc pl-5 space-y-1">
+            {% for r in reviews %}
+              <li class="font-mono">{{ r }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-sm text-slate-500">No files in _Review.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <footer class="mt-8 text-xs text-slate-500">
+      Tip: toggle <code>dry_run</code> in <code>rules.yaml</code>. The dashboard reloads fresh plan each time.
+    </footer>
+  </div>
+</body>
+</html>

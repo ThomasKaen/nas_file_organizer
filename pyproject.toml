@@ -31,3 +31,4 @@ packages = ["nas_file_organizer"]
 [project.scripts]
 nas-organize = "nas_file_organizer.adapters.cli:main"
 nas-watch    = "nas_file_organizer.adapters.watch:main"
+nas-web      = "nas_file_organizer.adapters.web:main"
