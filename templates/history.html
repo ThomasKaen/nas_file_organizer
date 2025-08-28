@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>History - NAS Organizer</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2em; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
+        th { background: #f4f4f4; }
+        tr:nth-child(even) { background: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <h1>History</h1>
+    <table>
+        <tr>
+            <th>Timestamp</th>
+            <th>Source</th>
+            <th>Destination</th>
+            <th>Rule</th>
+            <th>Status</th>
+            <th>Reason</th>
+        </tr>
+        {% for row in rows %}
+        <tr>
+            <td>{{ row[0] }}</td>
+            <td>{{ row[1] }}</td>
+            <td>{{ row[2] }}</td>
+            <td>{{ row[3] }}</td>
+            <td>{{ "✅" if row[4] else "❌" }}</td>
+            <td>{{ row[5] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

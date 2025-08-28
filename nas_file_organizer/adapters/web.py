@@ -2,9 +2,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List, Optional
 from fastapi import FastAPI, Request, BackgroundTasks, Form
-from fastapi.responses import RedirectResponse, PlainTextResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+import sqlite3
 
 from ..core.services import OrganizerService
 from ..core.models import Result, Options
@@ -24,6 +25,8 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 svc = OrganizerService()
 
+DB_PATH = Path(__file__).resolve().parents[1] / "cache.db"
+
 def _load_opts() -> Options:
     return svc.load_options(RULES_PATH)
 
@@ -40,7 +43,7 @@ def _review_files(opts: Options) -> list[Path]:
         return []
     return sorted([p for p in base.rglob("*") if p.is_file()])
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     opts = _load_opts()
     planned: List[Result] = list(svc.plan(opts))
@@ -94,10 +97,24 @@ def api_plan():
 def logs():
     return PlainTextResponse(_tail(LOG_PATH, 300))
 
+@app.get("/history", response_class=HTMLResponse)
+def history(request: Request):
+    rows = []
+    if DB_PATH.exists():
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("SELECT ts, src, dst, rule, ok, reason FROM logs ORDER BY ts DESC LIMIT 100;")
+        rows = cur.fetchall()
+        conn.close()
+    return templates.TemplateResponse("history.html", {"request": request, "rows": rows})
+
 def main():
-    import uvicorn
+    import uvicorn, os
     # host/port configurable via env later if needed
-    uvicorn.run("nas_file_organizer.adapters.web:app", host="127.0.0.1", port=8000, reload=False)
+    #uvicorn.run("nas_file_organizer.adapters.web:app", host="127.0.0.1", port=8000, reload=False)
+    host = os.environ.get("HOST", "0.0.0.0")  # 👈 allow Docker access
+    port = int(os.environ.get("PORT", "8000"))
+    uvicorn.run("nas_file_organizer.adapters.web:app", host=host, port=port, reload=False)
 
 if __name__ == "__main__":
     main()

@@ -19,7 +19,11 @@ dependencies = [
   "ruyaml>=0.91",         # YAML rules
   "rapidfuzz>=3.9",       # fuzzy match
   "watchdog>=4.0",        # (later) folder watcher
-  "rich>=13.7"            # nicer CLI output
+  "rich>=13.7",            # nicer CLI output
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
+  "jinja2>=3.1",
+  "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
