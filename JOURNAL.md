@@ -1,6 +1,6 @@
 2025-08-25 - Docker First Run
 
-(Docker_first_run.png) 
+![Docker First Run](Docker_first_run.png) 
 
 2025-08-25 — 12-Hour Sprint, AI as Depth Multiplier
 
