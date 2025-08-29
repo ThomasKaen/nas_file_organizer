@@ -1,3 +1,21 @@
+2025-08-29 — Phase 3 Completed: Web UI + Docker Stability
+
+Technical milestones
+
+- Added **Web UI** (FastAPI + Jinja2) → functional at http://localhost:8000.
+- Fixed **Docker volume mounts** → Inbox/Archive now properly mapped and visible.
+- Solved **cache.db issue** → ensured it’s a file not a folder, persistent across runs.
+- Implemented **cross-device safe moves** → copy+delete fallback for Docker-mounted volumes.
+- Confirmed **end-to-end run inside Docker** with Web UI trigger.
+
+Reflections
+
+- The containerized environment exposed edge cases (EXDEV errors, bind mounts) that don’t appear locally. Fixing them made the project truly NAS-ready.
+- Seeing the Web UI run and files correctly sort inside Docker feels like crossing the threshold: the tool is no longer just a script — it’s an app.
+- I’m starting to think of portfolio projects as “depth multipliers” — each phase adds another layer of real-world readiness. With AI’s help, that depth comes faster, but not free: the integration/debugging loop is still human-led.
+
+![File move success](file_move_proof.png)
+
 2025-08-25 - Docker First Run
 
 ![Docker First Run](Docker_first_run.png) 
