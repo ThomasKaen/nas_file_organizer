@@ -1,36 +1,52 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
-    <title>History - NAS Organizer</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 2em; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; font-size: 14px; }
-        th { background: #f4f4f4; }
-        tr:nth-child(even) { background: #f9f9f9; }
-    </style>
+  <meta charset="utf-8" />
+  <title>History · NAS Organizer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>History</h1>
-    <table>
-        <tr>
-            <th>Timestamp</th>
-            <th>Source</th>
-            <th>Destination</th>
-            <th>Rule</th>
-            <th>Status</th>
-            <th>Reason</th>
-        </tr>
-        {% for row in rows %}
-        <tr>
-            <td>{{ row[0] }}</td>
-            <td>{{ row[1] }}</td>
-            <td>{{ row[2] }}</td>
-            <td>{{ row[3] }}</td>
-            <td>{{ "✅" if row[4] else "❌" }}</td>
-            <td>{{ row[5] }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+<body class="bg-slate-50 text-slate-900">
+  <div class="max-w-6xl mx-auto p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="text-2xl font-bold">History</h1>
+      <a href="/" class="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm">← Back</a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-100">
+          <tr>
+            <th class="text-left px-3 py-2">Timestamp</th>
+            <th class="text-left px-3 py-2">Level</th>
+            <th class="text-left px-3 py-2">Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ts, level, msg in rows %}
+          <tr class="border-t">
+            <td class="px-3 py-2 font-mono text-xs text-slate-600">{{ ts }}</td>
+            <td class="px-3 py-2">
+              {% if level == "ERROR" %}
+                <span class="px-2 py-0.5 rounded bg-red-100 text-red-700 text-xs">ERROR</span>
+              {% elif level == "INFO" %}
+                <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-xs">INFO</span>
+              {% else %}
+                <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-xs">{{ level }}</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2 font-mono text-xs break-all">{{ msg }}</td>
+          </tr>
+          {% endfor %}
+          {% if not rows %}
+          <tr>
+            <td colspan="3" class="px-3 py-6 text-center text-slate-500">No log entries yet.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="mt-4 text-xs text-slate-500">Showing last {{ rows|length }} lines from <code>logs/organizer.log</code>.</p>
+  </div>
 </body>
 </html>

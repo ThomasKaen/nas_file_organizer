@@ -1,16 +1,12 @@
 services:
-  organizer:
+  nas-organizer:
     build: .
-    container_name: nas-organizer
-    #ports:
-    #  - "8000:8000"
+    ports:
+      - "8000:8000"
     volumes:
-      # Map NAS folders into the container
-      - /absolute/path/to/Inbox:/data/inbox
-      - /absolute/path/to/Archive:/data/archive
-      # Map config and logs
-      - ./rules.yaml:/app/rules.yaml
-      - ./logs:/app/logs
-    environment:
-      - TZ=Europe/London
-    restart: unless-stopped
+      - "C:/Users/Tamas/Documents/Inbox:/data/inbox"
+      - "C:/Users/Tamas/Documents/Archive:/data/archive"
+      - "./rules.yaml:/app/rules.yaml"
+      - "./logs:/app/logs"
+      - "./templates:/app/templates"
+      - "./cache.db:/data/cache.db"

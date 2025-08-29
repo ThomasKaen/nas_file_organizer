@@ -4,7 +4,7 @@ import sqlite3
 from pathlib import Path
 from typing import Optional
 
-DB_PATH = Path("cache.db")  # lives in project/workdir by default
+DB_PATH = Path("/data/cache.db")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS file_cache (

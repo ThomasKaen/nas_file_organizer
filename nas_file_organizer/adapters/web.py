@@ -43,6 +43,39 @@ def _review_files(opts: Options) -> list[Path]:
         return []
     return sorted([p for p in base.rglob("*") if p.is_file()])
 
+def _read_log_rows(limit: int = 300):
+    """Return parsed rows from organizer.log (timestamp, level, message)."""
+    if not LOG_PATH.exists():
+        return []
+    with LOG_PATH.open("r", encoding="utf-8", errors="ignore") as f:
+        lines = f.readlines()[-limit:]
+    rows = []
+    for ln in lines:
+        ln = ln.strip()
+        # Expected format from logging.basicConfig: "YYYY-MM-DD HH:MM:SS,ms LEVEL message"
+        # We'll split on first two spaces to get ts, level, rest
+        if not ln:
+            continue
+        try:
+            # naive parse: split timestamp + level + message
+            # e.g. "2025-08-25 21:33:03,123 INFO MOVED  src=... dst=..."
+            ts_str, rest = ln.split(" ", 1)
+            # join back time part if it contains comma
+            # safer: take first 23 chars for ts "YYYY-MM-DD HH:MM:SS,ms"
+            ts_str = ln[:23]
+            lv_and_msg = ln[24:].strip()
+            level, msg = lv_and_msg.split(" ", 1)
+            rows.append((ts_str, level, msg))
+        except Exception:
+            rows.append(("", "", ln))
+    return rows
+
+def _count_files(path: Path) -> int:
+    try:
+        return sum(1 for p in path.rglob("*") if p.is_file())
+    except Exception:
+        return 0
+
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     opts = _load_opts()
@@ -61,6 +94,7 @@ def home(request: Request):
         "count_move": len(to_move),
         "count_nomatch": len(no_match),
         "count_review": len(review_candidates) or len(reviews),
+        "inbox_count": _count_files(opts.inbox),
         "log_tail": logs_tail,
         "reviews": [str(p.relative_to(opts.archive_root)) for p in reviews][:50],
     })
@@ -99,14 +133,11 @@ def logs():
 
 @app.get("/history", response_class=HTMLResponse)
 def history(request: Request):
-    rows = []
-    if DB_PATH.exists():
-        conn = sqlite3.connect(DB_PATH)
-        cur = conn.cursor()
-        cur.execute("SELECT ts, src, dst, rule, ok, reason FROM logs ORDER BY ts DESC LIMIT 100;")
-        rows = cur.fetchall()
-        conn.close()
-    return templates.TemplateResponse("history.html", {"request": request, "rows": rows})
+    rows = _read_log_rows(500)
+    return templates.TemplateResponse(
+        "history.html",
+        {"request": request, "rows": rows}
+    )
 
 def main():
     import uvicorn, os

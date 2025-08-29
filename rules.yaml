@@ -6,7 +6,7 @@ defaults:
   page_window: { first: 2, last: 1 }  # first 2 pages + last 1 page
   ocr_on_empty_text: true             # only OCR a page if PDF text layer is empty
   ocr_languages: "eng"                # you can do "eng+hun" later
-  dry_run: true
+  dry_run: false
   skip_large_mb: 50
   title_lines: 5
 

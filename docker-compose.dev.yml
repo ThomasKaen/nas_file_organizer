@@ -1,0 +1,17 @@
+# docker-compose.dev.yml
+services:
+  organizer:
+    build: .
+    ports: ["8000:8000"]
+    volumes:
+      - .:/app                # 👈 mount full source
+      - ./rules.yaml:/app/rules.yaml
+      - ./logs:/app/logs
+      - ./templates:/app/templates
+      - ./cache.db:/app/cache.db
+      - "C:/Users/Tamas/Documents/Inbox:/data/inbox"
+      - "C:/Users/Tamas/Documents/Archive:/data/archive"
+    command: >
+      sh -c "pip install -e .[web] && 
+             uvicorn nas_file_organizer.adapters.web:app
+             --host 0.0.0.0 --port 8000 --reload"

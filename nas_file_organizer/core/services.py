@@ -8,6 +8,7 @@ from rapidfuzz import fuzz
 from ruyaml import YAML
 from .models import Options, Rule, RuleMatch, RuleAction, Result
 from .io_utils import list_files, read_text_any, next_available, render_template
+import errno, shutil
 
 yaml = YAML(typ="safe")
 _log = None
@@ -153,7 +154,8 @@ class OrganizerService:
             m = rule.match
             if m.filetypes and ext not in m.filetypes:
                 continue
-            score, first_kw = self._score_rule(text, rule, opts) if opts else self._score_rule(text, rule)
+            title_n = opts.title_lines if opts else 5  # fallback default
+            score, first_kw = self._score_rule(text, rule, title_n)
             if score >= m.min_score:
                 tup = (score, m.priority, rule, first_kw)
                 if (score > best[0]) or (score == best[0] and m.priority > best[1]):
@@ -210,7 +212,15 @@ class OrganizerService:
             try:
                 if not opts.dry_run:
                     r.dst.parent.mkdir(parents=True, exist_ok=True)
-                    r.src.replace(r.dst)
+                    try:
+                        # Fast path: same-mount rename
+                        r.src.replace(r.dst)
+                    except OSError as e:
+                        if (getattr(e, "errno", None) == errno.EXDEV) or "Invalid cross-device link" in str(e):
+                            shutil.copy2(r.src, r.dst)
+                            r.src.unlink()
+                        else:
+                            raise
 
                 if r.reason == "review":
                     log.info("REVIEW %s -> %s", r.src, r.dst)
@@ -228,3 +238,5 @@ class OrganizerService:
                     reason=str(e),
                     text_excerpt=r.text_excerpt,
                 )
+
+#docker exec - it de2d4e577153 sh - lc "nas-organizer -c /app/rules.yaml --trace | sed -n '1,200p'"

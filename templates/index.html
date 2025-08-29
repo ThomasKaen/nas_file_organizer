@@ -11,7 +11,10 @@
   <div class="max-w-5xl mx-auto p-6">
     <h1 class="text-2xl font-bold mb-2">NAS File Organizer</h1>
     <p class="text-sm text-slate-600 mb-6">
-      Inbox: <span class="font-mono">{{ inbox }}</span> · Archive: <span class="font-mono">{{ archive }}</span> · Dry-run: <span class="font-mono">{{ 'true' if dry_run else 'false' }}</span>
+      Inbox: <span class="font-mono">{{ inbox }}</span> ·
+      Archive: <span class="font-mono">{{ archive }}</span> ·
+      Dry-run: <span class="font-mono">{{ 'true' if dry_run else 'false' }}</span> ·
+      <strong>Inbox files: {{ inbox_count }}</strong>
     </p>
 
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -39,7 +42,7 @@
       <a href="/" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300">Refresh</a>
       <a href="/logs" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300">Open Logs</a>
       <a href="/api/plan" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300">API: Plan JSON</a>
-      <a href="/History" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300">History</a>
+      <a href="/history" class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300">History</a>
     </form>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
