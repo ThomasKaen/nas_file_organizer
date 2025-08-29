@@ -10,3 +10,7 @@ services:
       - "./logs:/app/logs"
       - "./templates:/app/templates"
       - "./cache.db:/data/cache.db"
+      - "./data:/data" # keeps cache.db between rebuilds
+      - "./schemas:/app/schemas"
+    environment:
+      - CACHE_DB=/data/cache.db

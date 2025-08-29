@@ -6,16 +6,25 @@ from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse,
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import sqlite3
+from contextlib import asynccontextmanager
 
 from ..core.services import OrganizerService
 from ..core.models import Result, Options
+from ..db.migrate import run as run_migrations
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    run_migrations()  # idempotent: CREATE IF NOT EXISTS
+    yield
+    # Shutdown (nothing needed)
 
 APP_ROOT = Path(__file__).resolve().parents[2]
 RULES_PATH = APP_ROOT / "rules.yaml"
 LOG_PATH = APP_ROOT / "logs" / "organizer.log"
 REVIEW_DIR = "_Review"
 
-app = FastAPI(title="NAS File Organizer")
+app = FastAPI(title="NAS File Organizer", lifespan=lifespan)
 templates = Jinja2Templates(directory=str(APP_ROOT / "templates"))
 
 # optional static folder (logo, etc.)

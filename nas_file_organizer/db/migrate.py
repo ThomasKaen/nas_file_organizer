@@ -1,7 +1,18 @@
+# app/db/migrate.py
+import os, sqlite3, pathlib, logging
 
--- =========
--- Phase 2: text cache
--- =========
+log = logging.getLogger("migrate")
+
+DB_PATH  = os.environ.get("CACHE_DB", "/data/cache.db")
+CANDIDATES = [
+    os.environ.get("SCHEMA_PATH"),
+    "/app/schemas/base_and_phase4.sql",
+    "/app/schemas/phase4.sql",
+]
+
+FALLBACK_SQL = """
+PRAGMA foreign_keys = ON;
+
 CREATE TABLE IF NOT EXISTS text_cache (
   file_hash   TEXT PRIMARY KEY,
   path        TEXT NOT NULL,
@@ -13,9 +24,6 @@ CREATE TABLE IF NOT EXISTS text_cache (
 );
 CREATE INDEX IF NOT EXISTS idx_text_cache_path ON text_cache(path);
 
--- =========
--- Phase 4: ML tables
--- =========
 CREATE TABLE IF NOT EXISTS ml_labels (
   file_hash   TEXT PRIMARY KEY,
   label       TEXT NOT NULL,
@@ -61,3 +69,21 @@ CREATE TABLE IF NOT EXISTS ml_metrics (
   value         REAL,
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+"""
+
+def run():
+    sql = None
+    for p in [c for c in CANDIDATES if c]:
+        path = pathlib.Path(p)
+        if path.exists():
+            sql = path.read_text(encoding="utf-8")
+            log.info(f"Running migration from {path}")
+            break
+    if sql is None:
+        log.warning("Schema file not found; using embedded fallback SQL.")
+        sql = FALLBACK_SQL
+
+    con = sqlite3.connect(DB_PATH)
+    con.executescript(sql)
+    con.commit()
+    con.close()
