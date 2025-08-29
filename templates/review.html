@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Review predictions</title>
+        <style>
+            body {font-family: system-ui, sans-serif; padding: 16px;}
+            .card {border: 1px solid #ddd; border-radius: 10px; padding: 12px; margin-bottom: 12px;}
+            .meta {font-size: 12px; color: #666}
+            .row {display: flex; gap: 8px; align-items: center}
+            textarea {width: 100%; height: 6em}
+            select, button {padding: 6px 10px}
+        </style>
+    </head>
+    <body>
+        <h1>Review & Correct</h1>
+        {% for it in items %}
+        <div class="card">
+            <div class="meta">{{ it["path"] }} — predicted: <b>{{ it["predicted_label"] or "?" }}</b> ({{ '%.2f' % (it["confidence"] or 0) }})</div>
+            <details><summary>show text</summary>
+                <textarea readonly>{{ it["text"] }}</textarea>
+            </details>
+            <form method="post" action="/review/submit" class="row">
+                <input type="hidden" name="file_hash" value="{{ it["file_hash"] }}" />
+                <input type="hidden" name="predicted_label" value="{{ it["predicted_label"] }}" />
+                <label>Correct label:
+                    <input name="corrected_label" placeholder="e.g., Invoices, Contracts, Photos" required />
+                </label>
+                <button type="submit">Save</button>
+            </form>
+        </div>
+        {% endfor %}
+    </body>
+</html>
