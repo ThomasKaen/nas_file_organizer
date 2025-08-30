@@ -4,6 +4,7 @@
 <head>
   <meta charset="utf-8"/>
   <title>Review</title>
+    <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: system-ui, sans-serif; margin: 24px; }
     table { width: 100%; border-collapse: collapse; }
@@ -20,22 +21,23 @@
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
-    <div class="flex items-center justify-between mb-4">
-        <h1 class="text-2xl font-bold">Review</h1>
-        <a href="/" class="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm">← Back</a>
-    </div>
+    <div class="max-w-6xl mx-auto p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h1 class="text-2xl font-bold">Review</h1>
+            <a href="/" class="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm">← Back</a>
+        </div>
 
-  <p class="muted">Archive root: {{ archive_root }}</p>
+        <p class="text-slate-500 text-sm mb-3">Archive root: {{ archive_root }}</p>
 
-  <table>
-    <thead>
-      <tr>
-        <th>File</th>
-        <th>Prediction</th>
-        <th>Choose label</th>
-        <th class="actions">Actions</th>
-      </tr>
-    </thead>
+        <table>
+            <thead>
+            <tr>
+                <th>File</th>
+                <th>Prediction</th>
+                <th>Choose label</th>
+                <th class="actions">Actions</th>
+            </tr>
+            </thead>
     <tbody>
       {% for r in rows %}
       <tr>
@@ -81,6 +83,7 @@
       {% endfor %}
     </tbody>
   </table>
+    </div>
 
   <div class="row muted" style="margin-top:10px;">
     Showing {{ rows|length }} items ·
