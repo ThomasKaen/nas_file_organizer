@@ -1,16 +1,18 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import List, Optional
-from fastapi import FastAPI, Request, BackgroundTasks, Form
+from fastapi import FastAPI, Request, BackgroundTasks, Form, APIRouter
 from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import sqlite3
+import sqlite3, os
 from contextlib import asynccontextmanager
 
 from ..core.services import OrganizerService
 from ..core.models import Result, Options
 from ..db.migrate import run as run_migrations
+from nas_file_organizer.web.review_router import router as review_router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -23,7 +25,9 @@ APP_ROOT = Path(__file__).resolve().parents[2]
 RULES_PATH = APP_ROOT / "rules.yaml"
 LOG_PATH = APP_ROOT / "logs" / "organizer.log"
 REVIEW_DIR = "_Review"
+CACHE_DB = os.environ.get("CACHE_DB", "/data/cache.db")
 
+router = APIRouter()
 app = FastAPI(title="NAS File Organizer", lifespan=lifespan)
 templates = Jinja2Templates(directory=str(APP_ROOT / "templates"))
 
@@ -35,6 +39,8 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 svc = OrganizerService()
 
 DB_PATH = Path(__file__).resolve().parents[1] / "cache.db"
+
+app.include_router(review_router)
 
 def _load_opts() -> Options:
     return svc.load_options(RULES_PATH)
@@ -84,6 +90,11 @@ def _count_files(path: Path) -> int:
         return sum(1 for p in path.rglob("*") if p.is_file())
     except Exception:
         return 0
+
+def db():
+    con = sqlite3.connect(CACHE_DB)
+    con.row_factory = sqlite3.Row
+    return con
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
@@ -145,6 +156,20 @@ def history(request: Request):
     rows = _read_log_rows(500)
     return templates.TemplateResponse(
         "history.html",
+        {"request": request, "rows": rows}
+    )
+
+@router.get("/review", response_class=HTMLResponse)
+def review_page(request: Request):
+    with db() as con:
+        rows = con.execute("""
+            SELECT file_hash, path, text, predicted_label, confidence
+            FROM ml_samples
+            ORDER BY created_at DESC
+            LIMIT 50
+        """).fetchall()
+    return templates.TemplateResponse(
+        "review.html",
         {"request": request, "rows": rows}
     )
 

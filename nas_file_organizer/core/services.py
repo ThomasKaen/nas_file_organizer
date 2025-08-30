@@ -10,11 +10,10 @@ from .models import Options, Rule, RuleMatch, RuleAction, Result
 from .io_utils import list_files, read_text_any, next_available, render_template
 import errno, shutil
 import os, joblib
+import sqlite3, hashlib  # for logging predictions to DB
 
 yaml = YAML(typ="safe")
 _log = None
-
-
 
 # load the ML model once (reuse across requests)
 MODEL_PATH = os.environ.get("MODEL_PATH", "/data/model.pkl")
@@ -45,6 +44,39 @@ def decide(rules_label, ml_label, ml_conf):
     if ml_label and ml_conf >= THRESH:
         return ml_label, "ml"
     return (rules_label or ml_label or "Unknown"), "rules"
+
+def _file_hash_for(p: Path) -> str:
+    # path-based hash so each file is unique in DB even if content matches
+    return hashlib.sha256(str(p).encode("utf-8")).hexdigest()
+
+def _log_ml_sample(file_hash: str, path: Path, text: str | None,
+                   predicted_label: str | None, confidence: float | None) -> None:
+    try:
+        with sqlite3.connect(os.environ.get("CACHE_DB", "/data/cache.db")) as c:
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS ml_samples (
+                  file_hash       TEXT PRIMARY KEY,
+                  path            TEXT,
+                  text            TEXT,
+                  predicted_label TEXT,
+                  confidence      REAL,
+                  created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                  updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );""")
+            c.execute("""
+                INSERT OR REPLACE INTO ml_samples
+                (file_hash, path, text, predicted_label, confidence, created_at, updated_at)
+                VALUES(?,?,?,?,?,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)
+            """, (
+                file_hash,
+                str(path),
+                (text or "")[:20000],  # keep it reasonable
+                predicted_label or "",
+                float(confidence or 0.0),
+            ))
+    except Exception:
+        # never break classification on logging errors
+        pass
 
 def _label_of_rule(rule: Rule, archive_root: Path | None = None) -> str | None:
     """
@@ -285,6 +317,11 @@ class OrganizerService:
                 page_window_last=opts.page_window_last,
                 ocr_on_empty_text=opts.ocr_on_empty_text,
             )
+            # compute & log ML prediction for Review UI
+            fh = _file_hash_for(p)
+            ml_label, ml_conf = ml_predict(text or p.name)
+            _log_ml_sample(fh, p, text, ml_label, ml_conf)
+
             rule, first_kw = self.classify(p, text, opts.rules)
             if not rule:
                 # Send to Review folder instead of pure no_match

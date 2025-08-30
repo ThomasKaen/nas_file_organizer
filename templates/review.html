@@ -1,34 +1,91 @@
+<!-- templates/review.html -->
 <!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <title>Review predictions</title>
-        <style>
-            body {font-family: system-ui, sans-serif; padding: 16px;}
-            .card {border: 1px solid #ddd; border-radius: 10px; padding: 12px; margin-bottom: 12px;}
-            .meta {font-size: 12px; color: #666}
-            .row {display: flex; gap: 8px; align-items: center}
-            textarea {width: 100%; height: 6em}
-            select, button {padding: 6px 10px}
-        </style>
-    </head>
-    <body>
-        <h1>Review & Correct</h1>
-        {% for it in items %}
-        <div class="card">
-            <div class="meta">{{ it["path"] }} — predicted: <b>{{ it["predicted_label"] or "?" }}</b> ({{ '%.2f' % (it["confidence"] or 0) }})</div>
-            <details><summary>show text</summary>
-                <textarea readonly>{{ it["text"] }}</textarea>
-            </details>
-            <form method="post" action="/review/submit" class="row">
-                <input type="hidden" name="file_hash" value="{{ it["file_hash"] }}" />
-                <input type="hidden" name="predicted_label" value="{{ it["predicted_label"] }}" />
-                <label>Correct label:
-                    <input name="corrected_label" placeholder="e.g., Invoices, Contracts, Photos" required />
-                </label>
-                <button type="submit">Save</button>
-            </form>
-        </div>
-        {% endfor %}
-    </body>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Review</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+    .muted { color: #666; font-size: 12px; }
+    form.inline { display: inline-block; margin: 0; }
+    .row { margin-bottom: 8px; }
+    .conf { font-variant-numeric: tabular-nums; }
+    .path { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color:#444; }
+    .actions { white-space: nowrap; }
+    .btn { padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; background: #fafafa; cursor: pointer; }
+    .btn.primary { background: #0ea5e9; color: white; border-color: #0ea5e9; }
+    select, input[type=text] { padding: 6px 8px; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+    <div class="flex items-center justify-between mb-4">
+        <h1 class="text-2xl font-bold">Review</h1>
+        <a href="/" class="px-3 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm">← Back</a>
+    </div>
+
+  <p class="muted">Archive root: {{ archive_root }}</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>File</th>
+        <th>Prediction</th>
+        <th>Choose label</th>
+        <th class="actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td style="width:45%">
+          <div class="path">{{ r["path"] }}</div>
+          <div class="muted">{{ (r["text"] or "")[:160] }}</div>
+        </td>
+        <td style="width:20%">
+          <div><strong>{{ r["predicted_label"] or "—" }}</strong></div>
+          <div class="muted conf">conf: {{ '%.2f' % (r["confidence"] or 0) }}</div>
+        </td>
+        <td style="width:20%">
+          <form class="inline" method="post" action="/review/confirm">
+            <input type="hidden" name="file_hash" value="{{ r['file_hash'] }}"/>
+            <input type="hidden" name="predicted_label" value="{{ r['predicted_label'] or '' }}"/>
+            <select name="corrected_label">
+              {% if r["predicted_label"] %}
+                <option value="{{ r['predicted_label'] }}">✔ {{ r['predicted_label'] }} (pred)</option>
+              {% endif %}
+              {% for lbl in labels %}
+                {% if lbl != r["predicted_label"] %}
+                  <option value="{{ lbl }}">{{ lbl }}</option>
+                {% endif %}
+              {% endfor %}
+              <option value="_Review">_Review</option>
+            </select>
+            <label class="muted"><input type="checkbox" name="move_file" value="1" checked/> move file</label>
+            <button class="btn primary" type="submit">Save</button>
+          </form>
+        </td>
+        <td class="actions" style="width:15%">
+          {% if r["predicted_label"] %}
+          <form class="inline" method="post" action="/review/confirm">
+            <input type="hidden" name="file_hash" value="{{ r['file_hash'] }}"/>
+            <input type="hidden" name="predicted_label" value="{{ r['predicted_label'] or '' }}"/>
+            <input type="hidden" name="corrected_label" value="{{ r['predicted_label'] }}"/>
+            <input type="hidden" name="move_file" value="1"/>
+            <button class="btn" type="submit">Approve</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="row muted" style="margin-top:10px;">
+    Showing {{ rows|length }} items ·
+    <a href="/review?only_pending=1">Pending</a> |
+    <a href="/review?only_pending=0">All</a>
+  </div>
+</body>
 </html>
