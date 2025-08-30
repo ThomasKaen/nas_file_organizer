@@ -8,6 +8,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, f1_score, classification_report
 from .utils import connect_db, collect_training_set, upsert_model_registry
+from collections import Counter
 
 DEFAULT_DB = os.environ.get("CACHE_DB", "/data/cache.db")
 DEFAULT_OUT = os.environ.get("MODEL_OUT", "/data/model.pkl")
@@ -30,8 +31,10 @@ def main():
 
     conn = connect_db(args.db)
     texts, labels, hashes = collect_training_set(conn, args.archive_root)
-    if len(texts) < 20:
-        raise SystemExit("Not enough samples in archive to train (need >= 20)")
+    print("DEBUG training set size:", len(texts))
+    print("DEBUG label counts:", Counter(labels))
+    if len(texts) < 5:
+        raise SystemExit("Not enough samples in archive to train (need >= 5)")
 
     X_train, X_test, y_train, y_test = train_test_split(
         texts, labels, test_size=0.2, random_state=42, stratify=labels
@@ -52,6 +55,7 @@ def main():
     print(classification_report(y_test, y_pred))
 
     upsert_model_registry(conn, args.version, args.out, float(acc), float(macro), notes="tfidf+logreg")
+
 
 if __name__ == "__main__":
     main()

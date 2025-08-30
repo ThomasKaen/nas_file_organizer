@@ -9,8 +9,12 @@ services:
       - "./rules.yaml:/app/rules.yaml"
       - "./logs:/app/logs"
       - "./templates:/app/templates"
-      - "./cache.db:/data/cache.db"
-      - "./data:/data" # keeps cache.db between rebuilds
       - "./schemas:/app/schemas"
+      - "./cache.db:/data/cache.db"
+      - "./ml:/data/ml"                # << new folder for models
     environment:
       - CACHE_DB=/data/cache.db
+      - MODEL_PATH=/data/ml/model.pkl  # << point to folder file
+      - ARCHIVE_ROOT=/data/archive
+      - ML_MODE=HYBRID
+      - ML_THRESHOLD=0.75

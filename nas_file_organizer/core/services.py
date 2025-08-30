@@ -9,9 +9,89 @@ from ruyaml import YAML
 from .models import Options, Rule, RuleMatch, RuleAction, Result
 from .io_utils import list_files, read_text_any, next_available, render_template
 import errno, shutil
+import os, joblib
 
 yaml = YAML(typ="safe")
 _log = None
+
+
+
+# load the ML model once (reuse across requests)
+MODEL_PATH = os.environ.get("MODEL_PATH", "/data/model.pkl")
+if os.path.exists(MODEL_PATH):
+    _ml_pipe = joblib.load(MODEL_PATH)["pipeline"]
+else:
+    _ml_pipe = None
+
+def ml_predict(text: str):
+    """Return (label, confidence) from ML model."""
+    if not _ml_pipe:
+        return None, 0.0
+    proba = _ml_pipe.predict_proba([text])[0]
+    idx = int(proba.argmax())
+    label = _ml_pipe.classes_[idx]
+    conf = float(proba[idx])
+    return label, conf
+
+ML_MODE = os.getenv("ML_MODE", "HYBRID").upper()
+THRESH = float(os.getenv("ML_THRESHOLD", "0.75"))
+
+def decide(rules_label, ml_label, ml_conf):
+    if ML_MODE == "ML_ONLY":
+        return ml_label, "ml"
+    if ML_MODE == "RULES_ONLY":
+        return rules_label or ml_label, "rules"
+    # HYBRID
+    if ml_label and ml_conf >= THRESH:
+        return ml_label, "ml"
+    return (rules_label or ml_label or "Unknown"), "rules"
+
+def _label_of_rule(rule: Rule, archive_root: Path | None = None) -> str | None:
+    """
+    Try to infer the semantic label a rule routes to (e.g., 'Invoices', 'CVs').
+    Priority: rule.name -> folder right after {archive_root} in move_to.
+    """
+    # 1) rule.name is often exactly the label
+    if getattr(rule, "name", None):
+        nm = str(rule.name).strip()
+        if nm:
+            return nm
+
+    # 2) try to read the first literal folder after {archive_root} in move_to
+    mv = getattr(getattr(rule, "action", None), "move_to", None)
+    if not mv:
+        return None
+
+    # normalize to POSIX and split
+    parts = Path(mv).as_posix().split("/")
+    # find token containing 'archive_root'
+    try:
+        i = next(idx for idx, tok in enumerate(parts) if "archive_root" in tok)
+        if i + 1 < len(parts):
+            seg = parts[i + 1]
+            # ignore templated tokens like '{date:%Y-%m}'
+            if "{" not in seg and "}" not in seg:
+                return seg
+    except StopIteration:
+        pass
+    return None
+
+
+def _resolve_label_to_rule(label: str | None, rules: list[Rule]) -> Rule | None:
+    """Return the first rule whose label or name matches the ML label (case-insensitive)."""
+    if not label:
+        return None
+    L = label.strip().lower()
+    for r in rules:
+        lab = _label_of_rule(r)
+        if lab and lab.strip().lower() == L:
+            return r
+    # also try matching by rule.name directly in case label-of-rule returned None
+    for r in rules:
+        nm = getattr(r, "name", None)
+        if nm and str(nm).strip().lower() == L:
+            return r
+    return None
 
 def get_log() -> logging.Logger:
     global _log
@@ -164,14 +244,33 @@ class OrganizerService:
                 elif (score > second[0]) or (score == second[0] and m.priority > second[1]):
                     second = tup
 
-        # if no match
+        # helper: try ML and map its label back to a rule
+        def _try_ml() -> tuple[Optional[Rule], Optional[str]] | None:
+            if ML_MODE == "RULES_ONLY":
+                return None
+            ml_label, ml_conf = ml_predict(text or path.name)
+            if ml_label and ml_conf >= THRESH:
+                r = _resolve_label_to_rule(ml_label, rules)
+                if r:
+                    # annotate first_kw to show ML provenance in logs/rename template if you like
+                    return r, f"ml:{ml_label} ({ml_conf:.2f})"
+            return None
+
+        # if no match → let ML decide if confident
         if not best[2]:
-            return None, None
+            ml = _try_ml()
+            if ml:
+                return ml
+            return None, None  # fall back to Review
 
-        # conflict threshold: if scores are effectively equal (within 0.25), mark for review
+        # near-tie → give ML a chance
         if second[2] is not None and abs(best[0] - second[0]) < 0.25:
-            return None, None  # signal "no confident match" → plan() will route to Review
+            ml = _try_ml()
+            if ml:
+                return ml
+            return None, None  # still ambiguous → Review
 
+        # clear rule winner
         return best[2], best[3]
 
     # --- planning & execution
