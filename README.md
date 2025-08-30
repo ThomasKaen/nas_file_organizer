@@ -94,13 +94,12 @@ Corrections feed back into the ML loop automatically.
 
 📸 Screenshots / Demo
 
-(Insert screenshots or GIFs here)
-
 Web UI home
-
-Review page with corrections
+![Web UI](docs/web_ui.png)
 
 Example log output
+![Web History](docs/web_history.png)
+![Web Log](docs/web_log.png)
 
 🧭 Roadmap
 
@@ -121,6 +120,15 @@ This project is licensed under the Prosperity License.
 
 See LICENSE.md
  for details.
+
+## 📚 Documentation Map
+
+This repo includes multiple perspectives on the project:
+
+- **README.md** → SaaS-style overview (problem → solution → impact).  
+- **CHANGELOG.md** → structured technical history.  
+- **JOURNAL.md** → personal dev reflections and process notes.  
+- **case_study.md** → portfolio narrative, lessons learned, and impact.
 
 📦 Latest Update (2025-08-30)
 

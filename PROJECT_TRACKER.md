@@ -28,16 +28,16 @@ Keep this short and moving: shift items between lists as work progresses. Use ch
 
 ## 🔜 Next Up (Phase 4 milestones)
 - [ ] Create DB tables: `samples`, `labels`, `metrics`, `corrections`
-- [ ] Extract training set from archive cache (text + metadata)
-- [ ] Baseline classifier: TF‑IDF + Linear SVM (or Logistic Regression)
-- [ ] Integrate classifier into pipeline; fallback to rules when low confidence
-- [ ] Add confidence threshold + modes: `RULES_ONLY`, `HYBRID`, `ML_ONLY`
+- ✅ Extract training set from archive cache (text + metadata)
+- ✅ Baseline classifier: TF-IDF + Logistic Regression
+- ✅ Integrate classifier into pipeline; fallback to rules when low confidence
+- ✅ Add confidence threshold + modes: `RULES_ONLY`, `HYBRID`, `ML_ONLY`
 - [ ] Web UI **Review** page to confirm/correct predictions; write gold labels
 - [ ] `nas-train` implementation + weekly cron/example; persist `model.pkl`
 - [ ] Evaluation: accuracy, precision/recall, confusion matrix in logs
 - [ ] Stretch: multilingual OCR (eng + hun)
 - [ ] Stretch: entity extraction (dates, totals, names)
-- [ ] Stretch: sub‑categories (e.g., invoices by company/client)
+- [ ] Stretch: sub-categories (e.g., invoices by company/client)
 - [ ] Stretch: “Ruleless mode” when ML confidence is high
 
 ---
