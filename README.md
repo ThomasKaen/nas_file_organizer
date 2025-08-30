@@ -20,7 +20,7 @@ Web dashboard: confirm/correct predictions in seconds.
 
 Continuous learning: retrains weekly from corrections.
 
-Multi-language OCR ready (English + Hungarian).
+Language OCR ready (English).
 
 📊 Impact
 
@@ -121,3 +121,21 @@ This project is licensed under the Prosperity License.
 
 See LICENSE.md
  for details.
+
+📦 Latest Update (2025-08-30)
+
+Phase 4 begun → added first ML integration on top of rules
+
+Model trained on early dataset (CVs vs Invoices)
+
+Hybrid flow now active:
+
+Rules → primary safety net
+
+ML → steps in when rules don’t match or tie
+
+Review → fallback for low confidence
+
+Model artifact saved at /data/ml/model.pkl and mounted via Docker for persistence
+
+(Accuracy metrics are limited at this stage since dataset is small, but loop is live and working. Future retraining will expand accuracy and classes.)
