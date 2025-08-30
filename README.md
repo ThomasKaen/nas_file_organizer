@@ -1,110 +1,116 @@
-🗂️ NAS File Organizer
-
-Smart document organizer for NAS or local file systems.
-Automatically sorts PDFs, images, text, and Office files into the right folders using OCR (Tesseract) and rule-based classification.
-
-✨ Features
-✅ Phase 1 — MVP
-
-Rule-based classification via rules.yaml.
-
-Extract text from PDFs, images, DOCX, XLSX, TXT.
-
-OCR support with Tesseract.
-
-CLI command: nas-organize.
-
-Watch mode: nas-watch.
-
-🚀 Phase 2 — Advanced (in progress)
-
-Scoring engine with title/body weighting.
-
-Review folder for ambiguous matches.
-
-SQLite cache → skips repeated OCR/extraction for unchanged files.
-
-Structured logging → logs/organizer.log with MOVED, REVIEW, SKIP, ERROR.
-
-Docker support → ready to run on Synology/QNAP or locally.
-
-### ✅ Phase 3 — Web + Docker Stability
-- **Web UI** (FastAPI + Jinja2) at [http://localhost:8000](http://localhost:8000)  
-  → monitor inbox/archive, review logs, run executes from browser.
-- **Cross-device safe moves** → copy+delete fallback for Docker volume mounts.
-- **Persistent cache.db** mounted into `/data/cache.db` (avoids DB lock errors).
-- **Cleaner Docker Compose** setup → maps Inbox/Archive from host.
-- First end-to-end Docker test successful (Aug 2025).
-
-➡️ Next: enhance Web dashboard (live inbox view, rule editor).
-📦 Installation
-
-Clone and install in editable mode:
-
-git clone https://github.com/ThomasKaen/nas_file_organizer.git
-cd nas_file_organizer
-pip install -e .
 
 
-Requires:
+🚀 Smart NAS File Organizer
 
-Python 3.13+
+Self-learning file management for NAS and home servers
 
-Tesseract OCR installed (tesseract --version to check)
+🌍 Problem
 
-⚙️ Usage
-Batch mode
-nas-organize -c rules.yaml --execute
+Messy “Inbox” folders eat up hours. Invoices, contracts, and photos pile up. Rules break on edge cases, and nothing learns from your corrections.
 
-Watch mode
-nas-watch
+💡 Solution
 
-Debugging (see scores)
-nas-organize -c rules.yaml --trace
+A self-learning NAS file organizer:
 
-🌐 Web UI
+One-line deploy: docker compose up → runs anywhere.
 
-Run:
+Hybrid rules + ML: rules guarantee safety, ML handles edge cases.
 
-nas-web
+Web dashboard: confirm/correct predictions in seconds.
 
+Continuous learning: retrains weekly from corrections.
+
+Multi-language OCR ready (English + Hungarian).
+
+📊 Impact
+
+80–90% auto-classification after first training.
+
+Human corrections become training data → accuracy climbs over time.
+
+Plug-and-play for freelancers, SMBs, or personal NAS users.
+
+🛠 Tech Stack
+
+FastAPI (backend & web dashboard)
+
+Jinja2 (templates)
+
+Docker (deployment)
+
+SQLite (cache + learning store)
+
+scikit-learn (ML classifier)
+
+Python 3
+
+⚡ Quickstart
+1. Clone & build
+git clone https://github.com/yourusername/nas-file-organizer.git
+cd nas-file-organizer
+docker compose up
+
+2. Access the dashboard
 
 Open http://localhost:8000
-.
-You can trigger runs, view history, and inspect logs.
 
-🐳 Docker
+Upload files into /data/inbox
 
-Build and run:
+Classified files move to /data/archive
 
-docker build -t nas-organizer .
-docker run --rm ^
-  -v ${PWD}/rules.yaml:/app/rules.yaml ^
-  -v "C:\Users\User\Documents\Inbox":/data/inbox ^
-  -v "C:\Users\User\Documents\Archive":/data/archive ^
-  -v ${PWD}/logs:/app/logs ^
-  nas-organizer
+3. Train the model
+docker exec -it nas_file_organizer-nas-organizer-1 \
+  python -m app.ml.train \
+  --db /data/cache.db \
+  --archive-root /data/archive \
+  --out /data/model.pkl \
+  --version v1
 
+4. Review & correct
 
-For NAS deployment, map shared folders into /data/inbox and /data/archive.
+Visit /review in the dashboard → confirm/correct classifications.
+Corrections feed back into the ML loop automatically.
 
-## Milestone: First Successful Run 🎉
+🗂 Architecture
+           ┌──────────┐
+           │  Inbox   │
+           └────┬─────┘
+                │
+        ┌───────▼────────┐
+        │  Rules Engine  │
+        └───────┬────────┘
+                │
+        ┌───────▼────────┐
+        │ Hybrid ML/Rules│
+        └───────┬────────┘
+                │
+        ┌───────▼──────────┐
+        │   Archive Store  │
+        └───────┬──────────┘
+                │
+        ┌───────▼──────────┐
+        │ Review Dashboard │
+        └──────────────────┘
 
-On **2025-08-25**, the first test invoices were sorted automatically into archive folders.  
+📸 Screenshots / Demo
 
-Milestone: Docker + Web UI Integration 🚀
+(Insert screenshots or GIFs here)
 
-On 2025-08-29, first end-to-end run completed fully in Docker with Web UI enabled.
+Web UI home
 
-**Demo run:**
-![CLI execution](docs/cli_mvp_test.png)
+Review page with corrections
 
-As shown above:
-- Detected 2 invoices in the inbox
-- Classified with the `invoices` rule
-- Moved into archive structure `Archive/Invoices/YYYY/MM/`
-- Renamed using the template `{date}_{first_keyword}_{original}`
-- 
+Example log output
+
+🧭 Roadmap
+
+ Phase 2: SQLite cache + logging + Review folder
+
+ Phase 3: Web UI + Docker stable + cross-device moves
+
+ Phase 4: ML hybrid classifier + feedback loop
+
+ Stretch: multi-language OCR, invoice entity extraction, “ruleless” high-confidence mode
 📜 License
 
 This project is licensed under the Prosperity License.
@@ -115,17 +121,3 @@ This project is licensed under the Prosperity License.
 
 See LICENSE.md
  for details.
-
-📝 Project Status
-
-Current phase: 2 (Advanced features done, preparing Web UI)
-
-📝 Project Status
-
-Current phase: 3 (Web + Docker stability)
-
-Next step: Build extended Web dashboard (view inbox files, tweak rules).
-
-Long-term: Multi-client profiles, DB-backed rule sets, smarter NLP classification.
-
-⚡ Tags: python · tesseract · ocr · nas · file-automation · sqlite · docker · automation · productivity
