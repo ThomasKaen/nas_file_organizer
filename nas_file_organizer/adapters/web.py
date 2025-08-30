@@ -159,20 +159,6 @@ def history(request: Request):
         {"request": request, "rows": rows}
     )
 
-@router.get("/review", response_class=HTMLResponse)
-def review_page(request: Request):
-    with db() as con:
-        rows = con.execute("""
-            SELECT file_hash, path, text, predicted_label, confidence
-            FROM ml_samples
-            ORDER BY created_at DESC
-            LIMIT 50
-        """).fetchall()
-    return templates.TemplateResponse(
-        "review.html",
-        {"request": request, "rows": rows}
-    )
-
 def main():
     import uvicorn, os
     # host/port configurable via env later if needed
