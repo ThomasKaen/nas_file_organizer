@@ -29,60 +29,92 @@
 
         <p class="text-slate-500 text-sm mb-3">Archive root: {{ archive_root }}</p>
 
-        <table>
-            <thead>
-            <tr>
-                <th>File</th>
-                <th>Prediction</th>
-                <th>Choose label</th>
-                <th class="actions">Actions</th>
-            </tr>
-            </thead>
-    <tbody>
-      {% for r in rows %}
-      <tr>
-        <td style="width:45%">
-          <div class="path">{{ r["path"] }}</div>
-          <div class="muted">{{ (r["text"] or "")[:160] }}</div>
-        </td>
-        <td style="width:20%">
-          <div><strong>{{ r["predicted_label"] or "—" }}</strong></div>
-          <div class="muted conf">conf: {{ '%.2f' % (r["confidence"] or 0) }}</div>
-        </td>
-        <td style="width:20%">
-          <form class="inline" method="post" action="/review/confirm">
-            <input type="hidden" name="file_hash" value="{{ r['file_hash'] }}"/>
-            <input type="hidden" name="predicted_label" value="{{ r['predicted_label'] or '' }}"/>
-            <select name="corrected_label">
-              {% if r["predicted_label"] %}
-                <option value="{{ r['predicted_label'] }}">✔ {{ r['predicted_label'] }} (pred)</option>
+  <table>
+  <thead>
+    <tr>
+      <th style="width:2%"><input type="checkbox" id="checkAll"/></th>
+      <th>File</th><th>Prediction</th><th>Choose label</th><th class="actions">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td>
+        <!-- Checkbox belongs to the bulk form via form="bulkForm" -->
+        <input type="checkbox" name="file_hash" value="{{ r['file_hash'] }}" class="rowCheck" form="bulkForm"/>
+      </td>
+
+      <td style="width:43%">
+        <div class="path">{{ r["path"] }}</div>
+        <div class="muted">{{ (r["text"] or "")[:160] }}</div>
+      </td>
+
+      <td style="width:20%">
+        <div><strong>{{ r["predicted_label"] or "—" }}</strong></div>
+        <div class="muted conf">conf: {{ '%.2f' % (r["confidence"] or 0) }}</div>
+      </td>
+
+      <td style="width:20%">
+        <!-- Per-row SAVE form (not nested in any other form) -->
+        <form class="inline" method="post" action="/review/confirm">
+          <input type="hidden" name="file_hash" value="{{ r['file_hash'] }}"/>
+          <input type="hidden" name="predicted_label" value="{{ r['predicted_label'] or '' }}"/>
+          <select name="corrected_label">
+            {% if r["predicted_label"] %}
+              <option value="{{ r['predicted_label'] }}">✔ {{ r['predicted_label'] }} (pred)</option>
+            {% endif %}
+            {% for lbl in labels %}
+              {% if lbl != r["predicted_label"] %}
+                <option value="{{ lbl }}">{{ lbl }}</option>
               {% endif %}
-              {% for lbl in labels %}
-                {% if lbl != r["predicted_label"] %}
-                  <option value="{{ lbl }}">{{ lbl }}</option>
-                {% endif %}
-              {% endfor %}
-              <option value="_Review">_Review</option>
-            </select>
-            <label class="muted"><input type="checkbox" name="move_file" value="1" checked/> move file</label>
-            <button class="btn primary" type="submit">Save</button>
-          </form>
-        </td>
-        <td class="actions" style="width:15%">
-          {% if r["predicted_label"] %}
-          <form class="inline" method="post" action="/review/confirm">
-            <input type="hidden" name="file_hash" value="{{ r['file_hash'] }}"/>
-            <input type="hidden" name="predicted_label" value="{{ r['predicted_label'] or '' }}"/>
-            <input type="hidden" name="corrected_label" value="{{ r['predicted_label'] }}"/>
-            <input type="hidden" name="move_file" value="1"/>
-            <button class="btn" type="submit">Approve</button>
-          </form>
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+            {% endfor %}
+            <option value="_Review">_Review</option>
+          </select>
+          <label class="muted"><input type="checkbox" name="move_file" value="1" checked/> move file</label>
+          <button class="btn primary" type="submit">Save</button>
+        </form>
+      </td>
+
+      <td class="actions" style="width:15%">
+        {% if r["predicted_label"] %}
+        <!-- Per-row APPROVE form -->
+        <form class="inline" method="post" action="/review/confirm">
+          <input type="hidden" name="file_hash" value="{{ r['file_hash'] }}"/>
+          <input type="hidden" name="predicted_label" value="{{ r['predicted_label'] or '' }}"/>
+          <input type="hidden" name="corrected_label" value="{{ r['predicted_label'] }}"/>
+          <input type="hidden" name="move_file" value="1"/>
+          <button class="btn" type="submit">Approve</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+        <form method="post" action="/review/bulk" id="bulkForm" style="margin-top:12px; display:flex; gap:8px; align-items:center;">
+  <span class="muted">Bulk:</span>
+  <select name="corrected_label">
+    {% for lbl in labels %}
+      <option value="{{ lbl }}">{{ lbl }}</option>
+    {% endfor %}
+    <option value="_Review">_Review</option>
+  </select>
+  <label class="muted"><input type="checkbox" name="move_file" value="1" checked/> move files</label>
+  <button class="btn primary" type="submit">Assign to selected</button>
+  <span id="selCount" class="muted" style="margin-left:8px;">0 selected</span>
+</form>
+
+        <script>
+  // select all / select none + selection count
+  const checkAll = document.getElementById('checkAll');
+  const rowChecks = () => Array.from(document.querySelectorAll('.rowCheck'));
+  const selCount = document.getElementById('selCount');
+  const update = () => { selCount.textContent = (rowChecks().filter(c=>c.checked).length) + " selected"; };
+  checkAll?.addEventListener('change', e => { rowChecks().forEach(cb => cb.checked = e.target.checked); update(); });
+  rowChecks().forEach(cb => cb.addEventListener('change', update));
+  update();
+</script>
     </div>
 
   <div class="row muted" style="margin-top:10px;">
