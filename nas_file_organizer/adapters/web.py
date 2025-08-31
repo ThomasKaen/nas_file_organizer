@@ -26,6 +26,7 @@ RULES_PATH = APP_ROOT / "rules.yaml"
 LOG_PATH = APP_ROOT / "logs" / "organizer.log"
 REVIEW_DIR = "_Review"
 CACHE_DB = os.environ.get("CACHE_DB", "/data/cache.db")
+ARCHIVE_ROOT = os.environ.get("ARCHIVE_ROOT", "/data/archive")
 
 router = APIRouter()
 app = FastAPI(title="NAS File Organizer", lifespan=lifespan)
@@ -95,6 +96,18 @@ def db():
     con = sqlite3.connect(CACHE_DB)
     con.row_factory = sqlite3.Row
     return con
+
+def _create_label(name: str = Form(...)):
+    name = name.strip().replace(" ", "_")
+    (Path(ARCHIVE_ROOT) / name).mkdir(parents=True, exist_ok=True)
+    return RedirectResponse(url="/review", status_code=303)
+
+app.add_api_route(
+    "/review/labels/new",
+    _create_label,
+    methods=["POST"],
+    name="create_label",
+)
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
