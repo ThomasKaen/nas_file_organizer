@@ -117,6 +117,10 @@
       <span id="selCount" class="muted" style="margin-left:8px;">0 selected</span>
     </form>
 
+    <form method="post" action="/review/retrain">
+      <button type="submit">Retrain model</button>
+    </form>
+
     <div class="row muted" style="margin-top:10px;">
       Showing {{ rows|length }} items ·
       <a href="/review?only_pending=1">Pending</a> |

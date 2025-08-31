@@ -12,7 +12,7 @@ from ..core.services import OrganizerService
 from ..core.models import Result, Options
 from ..db.migrate import run as run_migrations
 from nas_file_organizer.web.review_router import router as review_router
-
+from nas_file_organizer.ml.train import train_and_save
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,6 +27,8 @@ LOG_PATH = APP_ROOT / "logs" / "organizer.log"
 REVIEW_DIR = "_Review"
 CACHE_DB = os.environ.get("CACHE_DB", "/data/cache.db")
 ARCHIVE_ROOT = os.environ.get("ARCHIVE_ROOT", "/data/archive")
+MODEL_OUT = os.environ.get("MODEL_OUT", "/data/model.pkl")
+MODEL_VER = os.environ.get("MODEL_VERSION", "tfidf-logreg-v1")
 
 router = APIRouter()
 app = FastAPI(title="NAS File Organizer", lifespan=lifespan)
@@ -108,6 +110,13 @@ app.add_api_route(
     methods=["POST"],
     name="create_label",
 )
+def _retrain():
+    # Train from labeled samples in DB and save to MODEL_OUT
+    train_and_save(CACHE_DB, MODEL_OUT, MODEL_VER)
+    return RedirectResponse(url="/review", status_code=303)
+
+app.add_api_route("/review/retrain", _retrain, methods=["POST"], name="retrain_model")
+app.add_api_route("/review/retrain", _retrain, methods=["GET"],  name="retrain_model_get")
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):

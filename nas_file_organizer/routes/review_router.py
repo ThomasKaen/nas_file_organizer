@@ -3,6 +3,7 @@ from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
+from nas_file_organizer.ml.train import train_and_save
 import os, sqlite3
 
 APP_ROOT = Path(__file__).resolve().parents[2]
@@ -12,6 +13,7 @@ router = APIRouter(prefix="/review", tags=["review"])
 
 CACHE_DB     = os.environ.get("CACHE_DB", "/data/cache.db")
 ARCHIVE_ROOT = os.environ.get("ARCHIVE_ROOT", "/data/archive")
+MODEL_OUT = os.environ.get("MODEL_OUT", "/data/model.pkl")
 
 def db():
     con = sqlite3.connect(CACHE_DB)
@@ -147,3 +149,8 @@ def create_label(name: str = Form(...)):
     (Path(ARCHIVE_ROOT) / name).mkdir(parents=True, exist_ok=True)
     # append_rule_stub(name)  # enable when you add the helper
     return RedirectResponse("/review", status_code=303)
+
+@router.post("/review/retrain")
+def review_retrain():
+    train_and_save(CACHE_DB, MODEL_OUT, os.environ.get("MODEL_VERSION", "tfidf-logreg-v1"))
+    return RedirectResponse(url="/review", status_code=303)
