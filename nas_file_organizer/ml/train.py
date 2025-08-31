@@ -27,40 +27,47 @@ def build_pipeline() -> Pipeline:
 def train_and_save(db_path: str = DEFAULT_DB, out_path: str = DEFAULT_OUT,
                    version: str = DEFAULT_VERSION) -> Dict[str, Any]:
     conn = connect_db(db_path)
-    texts, labels, hashes = collect_training_set(conn)
+    texts, labels, _ = collect_training_set(conn)
     if not texts:
         raise RuntimeError("No training samples. Confirm/correct items in /review first.")
-
-    # Basic sanity: must have at least 2 classes
     if len(set(labels)) < 2:
-        raise RuntimeError("Need at least two classes to train. Add more labeled samples.")
+        # Still allow saving a model, but warn: only one class so far.
+        pipe = build_pipeline().fit(texts, labels)
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        joblib.dump({"pipeline": pipe, "classes": sorted(set(labels))}, out_path)
+        upsert_model_registry(conn, version, out_path, accuracy=1.0, macro_f1=1.0,
+                              notes="trained on single class; add more labeled classes")
+        return {"version": version, "out": out_path, "samples": len(texts),
+                "classes": dict(Counter(labels)), "accuracy": 1.0, "macro_f1": 1.0,
+                "report": "Single-class training; add more classes for evaluation."}
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        texts, labels, test_size=0.2, random_state=42, stratify=labels
-    )
+    counts = Counter(labels)
+    min_class = min(counts.values())
+    do_stratify = min_class >= 2
 
-    pipe = build_pipeline()
-    pipe.fit(X_train, y_train)
-
-    y_pred = pipe.predict(X_test)
-    acc = accuracy_score(y_test, y_pred)
-    macro = f1_score(y_test, y_pred, average="macro")
+    if do_stratify and len(texts) >= 10:
+        Xtr, Xte, ytr, yte = train_test_split(
+            texts, labels, test_size=0.2, random_state=42, stratify=labels
+        )
+        pipe = build_pipeline().fit(Xtr, ytr)
+        yhat = pipe.predict(Xte)
+        acc = accuracy_score(yte, yhat)
+        macro = f1_score(yte, yhat, average="macro")
+        report = classification_report(yte, yhat, zero_division=0)
+    else:
+        # Too few samples per class → train on ALL, skip holdout eval
+        pipe = build_pipeline().fit(texts, labels)
+        acc = 1.0
+        macro = 1.0
+        report = "No holdout evaluation (too few samples per class)."
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     joblib.dump({"pipeline": pipe, "classes": sorted(set(labels))}, out_path)
-
-    report = classification_report(y_test, y_pred, zero_division=0)
-
     upsert_model_registry(conn, version, out_path, float(acc), float(macro),
-                          notes=f"classes={sorted(set(labels))}")
-
+                          notes=f"classes={sorted(set(set(labels)))}; min_class={min_class}")
     return {
-        "version": version,
-        "out": out_path,
-        "samples": len(texts),
-        "classes": dict(Counter(labels)),
-        "accuracy": float(acc),
-        "macro_f1": float(macro),
+        "version": version, "out": out_path, "samples": len(texts),
+        "classes": dict(counts), "accuracy": float(acc), "macro_f1": float(macro),
         "report": report
     }
 

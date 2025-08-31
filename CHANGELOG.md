@@ -1,6 +1,29 @@
 # Changelog
 
 All notable changes to **NAS File Organizer** will be documented here.
+ChatGPT said:
+
+Perfect — we’ll sync the docs to reflect what you just finished (trainer + retrain endpoint wired, Review confirm moves files, model loop live).
+
+📌 Suggested updates
+CHANGELOG.md
+
+Add a new release entry:
+
+## [0.4.2] - 2025-08-31
+### Added
+- **Retrain model** endpoint (POST `/review/retrain`) wired into Review UI.
+- TF-IDF + Logistic Regression trainer (`ml/train.py`) with robust fallback for small classes.
+- `ml/utils.py` backfill + training set builder (prefers human gold in `ml_labels`).
+- Automatic DB updates + file move on Review confirmation: items now leave `_Review` when assigned.
+
+### Changed
+- Trainer now gracefully handles small datasets (no stratify split if class <2).
+- Confirm/Save route updates both filesystem and DB (`file_events`, `ml_samples`, `text_cache`).
+
+### Fixed
+- Review confirm now moves files out of `_Review` into the assigned label folder.
+- Prevented overwrite on move by auto-renaming (`file(1).pdf`, etc).
 
 ## [0.4.1] - 2025-08-31
 ### Added

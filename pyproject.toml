@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nas_file_organizer"
-version = "0.4.0"
+version = "0.4.2"
 description = "Content-aware file sorter with OCR for NAS"
 authors = [{name = "Tamas Kiss", email = "thomas.kaen.freelance@gmail.com"}]
 readme = "README.md"

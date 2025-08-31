@@ -130,20 +130,13 @@ This repo includes multiple perspectives on the project:
 - **JOURNAL.md** → personal dev reflections and process notes.  
 - **case_study.md** → portfolio narrative, lessons learned, and impact.
 
-📦 Latest Update (2025-08-30)
+📦📦 Latest Update (2025-08-31)
 
-Phase 4 begun → added first ML integration on top of rules
+Phase 4 progressing → retrain loop integrated
 
-Model trained on early dataset (CVs vs Invoices)
+- Review → confirm/correct items now *move* out of `_Review` into labeled folders
+- Retrain button (POST `/review/retrain`) → trains TF-IDF + Logistic Regression model
+- Model artifact persisted at `/data/model.pkl`
+- Trainer robust to small datasets (handles single-class gracefully)
+- Hybrid flow (Rules + ML + Review) now fully closed loop
 
-Hybrid flow now active:
-
-Rules → primary safety net
-
-ML → steps in when rules don’t match or tie
-
-Review → fallback for low confidence
-
-Model artifact saved at /data/ml/model.pkl and mounted via Docker for persistence
-
-(Accuracy metrics are limited at this stage since dataset is small, but loop is live and working. Future retraining will expand accuracy and classes.)

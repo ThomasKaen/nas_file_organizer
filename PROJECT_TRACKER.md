@@ -20,26 +20,20 @@ Keep this short and moving: shift items between lists as work progresses. Use ch
 
 ---
 
-## 🚧 In Progress (Phase 4)
-- Trainer update to **prefer `ml_labels`** (human gold) when available
-- `nas-train` CLI + weekly cron example (persist model to `/data/ml/model.pkl`)
-- Evaluation on retrain: accuracy, precision/recall, confusion matrix in logs
+## ✅ Done (Phase 4)
+- Trainer integrated with Review (`/review/retrain`) → saves model.pkl
+- Confirm/Save moves files out of `_Review` into assigned label folder
+- Robust trainer: handles single-class and few-sample datasets gracefully
 
----
+## 🚧 In Progress (Phase 4)
+- Expose training metrics in logs/UI
+- `nas-train` CLI + cron example for weekly retrain
+- Continue dataset expansion (backfill + review)
 
 ## 🔜 Next Up (Phase 4 milestones)
-- [ ] Create DB tables: `samples`, `labels`, `metrics`, `corrections` *(metrics pending; others exist)*
-- ✅ Extract training set from archive cache (text + metadata)
-- ✅ Baseline classifier: TF-IDF + Logistic Regression
-- ✅ Integrate classifier into pipeline; fallback to rules when low confidence
-- ✅ Add confidence threshold + modes: `RULES_ONLY`, `HYBRID`, `ML_ONLY`
-- ✅ Web UI **Review** page to confirm/correct predictions; write gold labels
-- [ ] `nas-train` implementation + weekly cron/example; persist `model.pkl`
-- [ ] Evaluation: accuracy, precision/recall, confusion matrix in logs
-- [ ] Stretch: multilingual OCR (eng + hun)
-- [ ] Stretch: entity extraction (dates, totals, names)
-- [ ] Stretch: sub-categories (e.g., invoices by company/client)
-- [ ] Stretch: “Ruleless mode” when ML confidence is high
+- [ ] Metrics endpoint/UI panel (accuracy, per-class counts, confusion matrix)
+- [ ] CLI: `nas-train` entrypoint
+- [ ] Stretch: multilingual OCR, entity extraction, sub-categories, ruleless mode
 
 ---
 

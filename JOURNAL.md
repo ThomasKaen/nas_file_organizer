@@ -1,3 +1,23 @@
+2025-08-31 — Phase 4: Retrain Loop Completed
+
+Technical milestones
+- Integrated `ml/train.py` with Review UI → retrain button works, saves `model.pkl`.
+- Trainer collects samples from `ml_labels` (human gold) + archive paths for backfill.
+- Fixed stratified split crash by adding robust fallback for single-class training.
+- Confirm/Save action now *moves* files from `_Review` to the chosen label folder and updates DB paths.
+- Verified full loop: classify → review → retrain → re-classify.
+
+Reflections
+- Early ML runs showed 0 confident matches — expected with tiny training sets.
+- The “aha” was seeing retrain succeed (200 OK) and produce a model artifact.
+- This phase made clear: feedback is the engine. Without corrections, the model has nothing to learn.
+- Feels like a true self-learning system now — not just rules, not just a static model, but a live loop.
+
+Next
+- Expose metrics (accuracy, per-class counts) in UI after retrain.
+- Add `nas-train` CLI for scheduled retraining (cron job).
+- Scale dataset (seed via backfill + more manual review).
+
 2025-08-31 — Phase 4: Review UI alive + label creation
 
 Technical milestones
