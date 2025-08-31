@@ -2,6 +2,25 @@
 
 All notable changes to **NAS File Organizer** will be documented here.
 
+## [0.4.1] - 2025-08-31
+### Added
+- **Review UI** to confirm/correct ML predictions from `ml_samples`, including:
+- Per-row Approve/Save actions
+- **Bulk assign** selected files to a label (optional “move files”)
+- **Create New Label** (POST `/review/labels/new`) — makes archive folder and returns to Review
+- Automatic logging of ML predictions to `ml_samples` during planning (so review has data).
+
+### Changed
+- Review page styled with Tailwind; added header Back button.
+- Safer form structure (no nested forms) + “Select all” with selected count.
+
+### Fixed
+- Routing mismatch causing 404 on label creation: hot-patched **POST `/review/labels/new`** in `web.py` to ensure the endpoint is registered even if router code isn’t reloaded inside the container.
+- Ensured `_Review` and subfolders appear via recursive listing for dashboard widgets (where used).
+
+### Notes
+- Next: trainer to **prefer human gold** from `ml_labels` over folder-derived labels during retraining; add evaluation metrics after training.
+
 ## [0.4.0] - 2025-08-30
 ### Added
 - Initial ML integration on top of rules engine (Phase 4 start).
@@ -11,9 +30,9 @@ All notable changes to **NAS File Organizer** will be documented here.
 
 ### Changed
 - `services.py` extended with `ml_predict()` + `decide()` for hybrid classification:
-  - Rules remain the primary safety net.
-  - ML is consulted when rules don’t match or when scores are ambiguous.
-  - Low-confidence results are routed to `_Review`.
+- Rules remain the primary safety net.
+- ML is consulted when rules don’t match or when scores are ambiguous.
+- Low-confidence results are routed to `_Review`.
 
 ### Notes
 - Current demo model trained on ~14 samples (CVs vs Invoices).
@@ -37,7 +56,7 @@ All notable changes to **NAS File Organizer** will be documented here.
 ## [0.1.0] - 2025-08-25
 ### Added
 - Initial MVP:
-  - Rule-based file classification via `rules.yaml`.
-  - OCR support using Tesseract.
-  - CLI command `nas-organize`.
-  - Basic watcher mode (`nas-watch`).
+- Rule-based file classification via `rules.yaml`.
+- OCR support using Tesseract.
+- CLI command `nas-organize`.
+- Basic watcher mode (`nas-watch`).

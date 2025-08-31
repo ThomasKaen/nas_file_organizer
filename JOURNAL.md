@@ -1,3 +1,22 @@
+2025-08-31 — Phase 4: Review UI alive + label creation
+
+Technical milestones
+- Shipped **Review UI** with per-row Approve/Save and **Bulk assign**.
+- Added **Create New Label** (POST `/review/labels/new`) — creates archive folder and returns to Review.
+- Logged ML predictions into `ml_samples` during planning so Review always has items.
+- Fixed route registration by hot-patching the endpoint in `web.py` (container wasn’t reloading router code).
+- Cleaned up template forms (no nesting), added Tailwind header and “select all” + counter.
+
+Reflections
+- The bug wasn’t logic; it was **environment**: Python edits in the router weren’t reflected in the running container. A tiny hotfix in `web.py` unblocked the feature immediately.
+- “Explicit is better than implicit” hit hard today: naming routes + hardcoding the POST path (`/review/labels/new`) avoided the prefix confusion.
+- Progress feels nonlinear: one missing route masked multiple UI tweaks. Once the endpoint existed, the whole Review loop clicked.
+- Next time: mount source in compose (dev mode) so Python changes are live, or rebuild consistently after code edits.
+
+Next
+- Update trainer to **prefer human gold** from `ml_labels` and log metrics after retrain.
+- Add `nas-train` CLI + weekly example, then iterate on thresholds with a slightly larger dataset.
+
 2025-08-29 — Phase 3 Completed: Web UI + Docker Stability
 
 Technical milestones
