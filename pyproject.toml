@@ -4,32 +4,58 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nas_file_organizer"
-version = "0.4.2"
+version = "0.4.3"
 description = "Content-aware file sorter with OCR for NAS"
 authors = [{name = "Tamas Kiss", email = "thomas.kaen.freelance@gmail.com"}]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-  "pymupdf>=1.24",        # PDF text
-  "pytesseract>=0.3.10",  # OCR (needs Tesseract installed to OCR images)
-  "Pillow>=10.0",         # imaging for OCR
-  "python-docx>=1.1",     # DOCX text
-  "openpyxl>=3.1",        # XLSX text
-  "chardet>=5.2",         # robust TXT decode
-  "ruyaml>=0.91",         # YAML rules
-  "rapidfuzz>=3.9",       # fuzzy match
-  "watchdog>=4.0",        # (later) folder watcher
-  "rich>=13.7",            # nicer CLI output
+  # --- Core app / web ---
   "fastapi>=0.115",
   "uvicorn>=0.30",
   "jinja2>=3.1",
   "python-multipart>=0.0.9",
+  "rich>=13.7",
+
+  # --- Rules / YAML ---
+  "ruyaml>=0.91",
+
+  # --- File parsing & OCR (optional at runtime unless you enable OCR) ---
+  "pymupdf>=1.24",        # PDF text (fast + reliable)
+  "pytesseract>=0.3.10",  # OCR bindings (requires Tesseract binary installed)
+  "Pillow>=10.0",         # imaging for OCR
+  "python-docx>=1.1",     # DOCX text
+  "openpyxl>=3.1",        # XLSX text
+  "chardet>=5.2",         # robust TXT decode
+
+  # --- ML (training & inference) ---
   "scikit-learn>=1.4",
-  "numpy>=1.26"
+  "numpy>=1.26",
+  "scipy>=1.10",          # sklearn runtime dep; pin to avoid resolver pain
+  "joblib>=1.3",          # sklearn model persistence
+
+  # --- Fuzzy / matching ---
+  "rapidfuzz>=3.9",
+
+  # --- Scheduling (auto weekly retrain) ---
+  "apscheduler>=3.10",
+
+  # --- Optional but useful ---
+  "python-dateutil>=2.9", # APScheduler & timestamp parsing niceties
+  "watchdog>=4.0",        # (later) folder watcher
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "ruff", "mypy"]
+ml = ["scikit-learn>=1.4", "numpy>=1.26", "scipy>=1.10", "joblib>=1.3"]
+ocr = ["pymupdf>=1.24", "pytesseract>=0.3.10", "Pillow>=10.0"]
+docs = ["rich>=13.7"]
+watch = ["watchdog>=4.0"]
+
+dev = [
+  "pytest",
+  "ruff",
+  "mypy",
+]
 
 [tool.setuptools]
 packages = ["nas_file_organizer"]

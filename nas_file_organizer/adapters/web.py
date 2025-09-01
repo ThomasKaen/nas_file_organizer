@@ -1,11 +1,15 @@
+# nas_file_organizer/adapters/web.py
 from __future__ import annotations
 from pathlib import Path
-from typing import List, Optional
-from fastapi import FastAPI, Request, BackgroundTasks, Form, APIRouter
+from typing import List
+from fastapi import FastAPI, Request, BackgroundTasks, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import sqlite3, os
+import sqlite3, os, datetime
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 from contextlib import asynccontextmanager
 
 from ..core.services import OrganizerService
@@ -17,10 +21,11 @@ from nas_file_organizer.ml.train import train_and_save
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    run_migrations()  # idempotent: CREATE IF NOT EXISTS
+    run_migrations()  # idempotent
     yield
-    # Shutdown (nothing needed)
+    # Shutdown: nothing needed
 
+# ===== Env / paths =====
 APP_ROOT = Path(__file__).resolve().parents[2]
 RULES_PATH = APP_ROOT / "rules.yaml"
 LOG_PATH = APP_ROOT / "logs" / "organizer.log"
@@ -30,21 +35,26 @@ ARCHIVE_ROOT = os.environ.get("ARCHIVE_ROOT", "/data/archive")
 MODEL_OUT = os.environ.get("MODEL_OUT", "/data/model.pkl")
 MODEL_VER = os.environ.get("MODEL_VERSION", "tfidf-logreg-v1")
 
-router = APIRouter()
 app = FastAPI(title="NAS File Organizer", lifespan=lifespan)
 templates = Jinja2Templates(directory=str(APP_ROOT / "templates"))
 
-# optional static folder (logo, etc.)
+# Static
 static_dir = APP_ROOT / "static"
 static_dir.mkdir(exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
+# Services
 svc = OrganizerService()
 
-DB_PATH = Path(__file__).resolve().parents[1] / "cache.db"
-
+# Include existing review router
 app.include_router(review_router)
 
+# ===== Scheduler (define ONCE, before installing jobs) =====
+SCHED_TZ = os.environ.get("SCHED_TZ", "UTC")
+scheduler = BackgroundScheduler(timezone=SCHED_TZ)
+JOB_ID = "weekly_retrain"
+
+# ===== Helpers =====
 def _load_opts() -> Options:
     return svc.load_options(RULES_PATH)
 
@@ -62,7 +72,6 @@ def _review_files(opts: Options) -> list[Path]:
     return sorted([p for p in base.rglob("*") if p.is_file()])
 
 def _read_log_rows(limit: int = 300):
-    """Return parsed rows from organizer.log (timestamp, level, message)."""
     if not LOG_PATH.exists():
         return []
     with LOG_PATH.open("r", encoding="utf-8", errors="ignore") as f:
@@ -70,16 +79,9 @@ def _read_log_rows(limit: int = 300):
     rows = []
     for ln in lines:
         ln = ln.strip()
-        # Expected format from logging.basicConfig: "YYYY-MM-DD HH:MM:SS,ms LEVEL message"
-        # We'll split on first two spaces to get ts, level, rest
         if not ln:
             continue
         try:
-            # naive parse: split timestamp + level + message
-            # e.g. "2025-08-25 21:33:03,123 INFO MOVED  src=... dst=..."
-            ts_str, rest = ln.split(" ", 1)
-            # join back time part if it contains comma
-            # safer: take first 23 chars for ts "YYYY-MM-DD HH:MM:SS,ms"
             ts_str = ln[:23]
             lv_and_msg = ln[24:].strip()
             level, msg = lv_and_msg.split(" ", 1)
@@ -99,25 +101,105 @@ def db():
     con.row_factory = sqlite3.Row
     return con
 
+# ---- Simple app settings (persist in CACHE_DB) ----
+def _ensure_settings_table():
+    with db() as con:
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS app_settings (
+              key TEXT PRIMARY KEY,
+              value TEXT NOT NULL
+            )
+        """)
+        con.commit()
+
+def _get_setting(key: str, default: str) -> str:
+    _ensure_settings_table()
+    with db() as con:
+        row = con.execute("SELECT value FROM app_settings WHERE key=?", (key,)).fetchone()
+        return row["value"] if row else default
+
+def _set_setting(key: str, value: str):
+    _ensure_settings_table()
+    with db() as con:
+        con.execute("""
+            INSERT INTO app_settings(key, value) VALUES(?,?)
+            ON CONFLICT(key) DO UPDATE SET value=excluded.value
+        """, (key, value))
+        con.commit()
+
+DEFAULT_DAY = "mon"   # mon,tue,wed,thu,fri,sat,sun
+DEFAULT_HOUR = "3"    # 0..23
+
+def _get_schedule():
+    day  = _get_setting("retrain_day", DEFAULT_DAY)
+    hour = _get_setting("retrain_hour", DEFAULT_HOUR)
+    return day, hour
+
+def _set_schedule(day: str, hour: str):
+    _set_setting("retrain_day", day)
+    _set_setting("retrain_hour", hour)
+
+def _needs_retrain(db_path: str, days: int = 7) -> bool:
+    if not os.path.exists(db_path):
+        return True
+    try:
+        con = sqlite3.connect(db_path)
+        row = con.execute("SELECT MAX(created_at) FROM ml_models").fetchone()
+        con.close()
+        if not row or not row[0]:
+            return True
+        last = datetime.datetime.fromisoformat(row[0])
+        return (datetime.datetime.utcnow() - last).days >= days
+    except Exception:
+        return True
+
+def _do_retrain():
+    try:
+        res = train_and_save(CACHE_DB, MODEL_OUT, MODEL_VER)
+        print(f"[AutoRetrain] Model retrained ({res['samples']} samples, acc={res['accuracy']:.3f})")
+    except Exception as e:
+        print("[AutoRetrain] Retrain failed:", e)
+
+def _install_weekly_job():
+    # Remove existing job (if any), then add a new one using current settings
+    try:
+        scheduler.remove_job(JOB_ID)
+    except Exception:
+        pass
+    day, hour = _get_schedule()
+    # sanitize inputs
+    valid_days = {"mon","tue","wed","thu","fri","sat","sun"}
+    if day not in valid_days:
+        day = DEFAULT_DAY
+    try:
+        h = int(hour)
+        if not (0 <= h <= 23):
+            h = int(DEFAULT_HOUR)
+    except Exception:
+        h = int(DEFAULT_HOUR)
+    trigger = CronTrigger(day_of_week=day, hour=h, minute=0)
+    scheduler.add_job(_do_retrain, trigger=trigger, id=JOB_ID)
+    print(f"[AutoRetrain] Scheduled weekly retrain: {day} {h:02d}:00 ({SCHED_TZ})")
+
+# ===== Routes (all local ones via app.add_api_route) =====
+
+# Create new top-level label folder
 def _create_label(name: str = Form(...)):
     name = name.strip().replace(" ", "_")
     (Path(ARCHIVE_ROOT) / name).mkdir(parents=True, exist_ok=True)
     return RedirectResponse(url="/review", status_code=303)
 
-app.add_api_route(
-    "/review/labels/new",
-    _create_label,
-    methods=["POST"],
-    name="create_label",
-)
+app.add_api_route("/review/labels/new", _create_label, methods=["POST"], name="create_label")
+
+# Manual retrain (button on review page)
 def _retrain():
-    # Train from labeled samples in DB and save to MODEL_OUT
     train_and_save(CACHE_DB, MODEL_OUT, MODEL_VER)
     return RedirectResponse(url="/review", status_code=303)
 
 app.add_api_route("/review/retrain", _retrain, methods=["POST"], name="retrain_model")
 app.add_api_route("/review/retrain", _retrain, methods=["GET"],  name="retrain_model_get")
 
+# Home/dashboard
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     opts = _load_opts()
@@ -141,20 +223,20 @@ def home(request: Request):
         "reviews": [str(p.relative_to(opts.archive_root)) for p in reviews][:50],
     })
 
+# Run plan/execute from UI
 @app.post("/run")
 def run(background_tasks: BackgroundTasks, mode: str = Form("plan")):
     opts = _load_opts()
     if mode == "execute":
-        # run execute in background to keep UI responsive
         def _do():
             for _ in svc.execute(opts):
                 pass
         background_tasks.add_task(_do)
         return RedirectResponse(url="/", status_code=303)
     else:
-        # plan only just refreshes dashboard
         return RedirectResponse(url="/", status_code=303)
 
+# API: plan JSON
 @app.get("/api/plan")
 def api_plan():
     opts = _load_opts()
@@ -169,6 +251,7 @@ def api_plan():
         })
     return JSONResponse(out)
 
+# Logs & History
 @app.get("/logs")
 def logs():
     return PlainTextResponse(_tail(LOG_PATH, 300))
@@ -176,16 +259,38 @@ def logs():
 @app.get("/history", response_class=HTMLResponse)
 def history(request: Request):
     rows = _read_log_rows(500)
-    return templates.TemplateResponse(
-        "history.html",
-        {"request": request, "rows": rows}
-    )
+    return templates.TemplateResponse("history.html", {"request": request, "rows": rows})
+
+# Settings: schedule (GET page + POST save)
+def _schedule_page(request: Request):
+    day, hour = _get_schedule()
+    return templates.TemplateResponse("settings_schedule.html", {
+        "request": request,
+        "day": day,
+        "hour": hour,
+        "days": ["mon","tue","wed","thu","fri","sat","sun"],
+        "hours": [str(i) for i in range(24)]
+    })
+
+def _schedule_save(day: str = Form(...), hour: str = Form(...)):
+    _set_schedule(day.strip().lower(), hour.strip())
+    _install_weekly_job()
+    return RedirectResponse(url="/settings/schedule", status_code=303)
+
+app.add_api_route("/settings/schedule", _schedule_page, methods=["GET"],  response_class=HTMLResponse, name="schedule_page")
+app.add_api_route("/settings/schedule", _schedule_save, methods=["POST"], name="schedule_save")
+
+# ===== Startup actions =====
+if _needs_retrain(CACHE_DB, 7):
+    print("[AutoRetrain] Model is stale or missing → retraining now...")
+    _do_retrain()
+
+scheduler.start()
+_install_weekly_job()
 
 def main():
-    import uvicorn, os
-    # host/port configurable via env later if needed
-    #uvicorn.run("nas_file_organizer.adapters.web:app", host="127.0.0.1", port=8000, reload=False)
-    host = os.environ.get("HOST", "0.0.0.0")  # 👈 allow Docker access
+    import uvicorn
+    host = os.environ.get("HOST", "0.0.0.0")
     port = int(os.environ.get("PORT", "8000"))
     uvicorn.run("nas_file_organizer.adapters.web:app", host=host, port=port, reload=False)
 

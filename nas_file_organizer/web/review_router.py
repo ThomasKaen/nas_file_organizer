@@ -8,7 +8,7 @@ import os, sqlite3, shutil, hashlib, datetime
 
 APP_ROOT = Path(__file__).resolve().parents[2]
 templates = Jinja2Templates(directory=str(APP_ROOT / "templates"))
-
+_last_metrics = {}
 router = APIRouter(prefix="/review", tags=["review"])
 
 CACHE_DB     = os.environ.get("CACHE_DB", "/data/cache.db")
@@ -52,7 +52,8 @@ def review_page(request: Request, only_pending: int = 1):
         "request": request,
         "rows": rows,
         "labels": _labels(),
-        "archive_root": ARCHIVE_ROOT
+        "archive_root": ARCHIVE_ROOT,
+        "metrics": _last_metrics
     })
 
 @router.post("/submit", name="review_confirm")
@@ -171,5 +172,6 @@ def create_label(name: str = Form(...)):
 
 @router.post("/review/retrain", name="retrain_model")
 def review_retrain():
-    train_and_save(CACHE_DB, MODEL_OUT, os.environ.get("MODEL_VERSION", "tfidf-logreg-v1"))
+    global _last_metrics
+    _last_metrics = train_and_save(CACHE_DB, MODEL_OUT, os.environ.get("MODEL_VERSION", "tfidf-logreg-v1"))
     return RedirectResponse(url="/review", status_code=303)

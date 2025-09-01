@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Retrain Schedule</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;margin:24px}
+    form{display:flex;gap:12px;align-items:center}
+    select,button{padding:6px 10px}
+  </style>
+</head>
+<body>
+  <h2>Weekly retrain schedule (UTC)</h2>
+  <form method="post" action="/settings/schedule">
+    <label>Day
+      <select name="day">
+        {% for d in days %}
+          <option value="{{ d }}" {% if d == day %}selected{% endif %}>{{ d|capitalize }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Hour
+      <select name="hour">
+        {% for h in hours %}
+          <option value="{{ h }}" {% if h == hour %}selected{% endif %}>{{ "%02d"|format(h|int) }}:00</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit">Save</button>
+      <p><a href="/review">← Back to Review</a></p>
+  </form>
+
+  <p style="margin-top:12px;color:#666">Current: <strong>{{ day|capitalize }} {{ "%02d"|format(hour|int) }}:00 UTC</strong></p>
+  <p><a href="/review">← Back to Review</a></p>
+</body>
+</html>

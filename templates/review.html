@@ -117,9 +117,17 @@
       <span id="selCount" class="muted" style="margin-left:8px;">0 selected</span>
     </form>
 
+    <div class="top">
+  <h2>Review queue</h2>
+  <div style="display:flex; gap:10px; align-items:center">
     <form method="post" action="/review/retrain">
-      <button type="submit">Retrain model</button>
+      <button class="primary" type="submit">Retrain model</button>
     </form>
+    <a href="/settings/schedule">
+      <button type="button">⚙️ Retrain schedule</button>
+    </a>
+  </div>
+</div>
 
     <div class="row muted" style="margin-top:10px;">
       Showing {{ rows|length }} items ·
