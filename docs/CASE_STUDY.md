@@ -27,17 +27,21 @@ End-to-end pipeline worked in Docker + Web UI.
 
 Reflection: Debugging in Docker surfaced edge cases I’d never seen locally. Copy/paste wasn’t “cheating” — AI help compressed weeks into hours, but integration still required persistence.
 
-Phase 4 — Smarter & Self-Learning (in progress)
+Phase 4 — Smarter & Self-Learning (completed)
 
-Added ML classifier (scikit-learn) on top of rules.
+Integrated ML classifier (scikit-learn) alongside rules.
 
-Designed feedback loop: review page corrections become training data.
+Implemented closed feedback loop: review page corrections feed into training data.
 
-Background retrainer (nas-train) saves updated models (model.pkl).
+Retrain button wired to trainer; model (`model.pkl`) saved and loaded in HYBRID mode.
 
-Planned stretch goals: multilingual OCR, invoice entity extraction, sub-categories, high-confidence “ruleless mode.”
+Added background scheduler:
+- Retrains on startup if model is stale (>7 days).
+- Weekly retrain job (user can set day/hour via `/settings/schedule`).
 
-Reflection: The hybrid design matters — rules remain as safety net, ML handles messy real-world edge cases.
+Review confirm now moves files out of `_Review` into labeled folders and syncs DB paths.
+
+Reflection: The hybrid design matters — rules remain as safety net, ML handles messy real-world edge cases. Automation only counts if it frees the user from babysitting — the auto-scheduler closed that gap.
 
 💡 Lessons Learned
 
@@ -47,7 +51,7 @@ Rules + ML > either alone: Rules give safety and explainability; ML brings adapt
 
 Docker debugging is a teacher: real-world behavior surfaces only in realistic environments.
 
-It’s a product, not a script: small freelance-style utilities can evolve into portfolio-level products.
+Automation means full loop: review → retrain → schedule. Without self-retraining, “AI” is still just a static script.
 
 🌍 Impact & Portfolio Value
 
@@ -55,17 +59,19 @@ Demonstrates end-to-end ability: from script → app → product mindset.
 
 Shows skills in Python, FastAPI, Docker, SQLite, ML integration.
 
+Highlights ability to integrate scheduling, persistence, and UI controls.
+
 Case study material for freelance clients, technical interviews, and portfolio presentations.
 
-🧭 Next Steps
+🧭 Next Steps (Phase 5)
 
-Ship Phase 4 fully (hybrid ML in production, feedback loop live).
+Add polish: metrics panel after retrain (accuracy, per-class counts).
 
-Add polish: dropdown labels in review page, entity extraction for invoices.
+Entity extraction for invoices (dates, totals, companies).
 
-Capture metrics: auto-classification % and accuracy improvements after retrain.
+Sub-categories and multilingual OCR.
 
-Document real-world performance as a follow-up case study.
+Optional: high-confidence “ruleless mode” for performance.
 
 ✍️ Personal Reflection
 

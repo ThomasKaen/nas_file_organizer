@@ -1,14 +1,19 @@
 # Changelog
+## [0.4.3] - 2025-09-01
+### Added
+- **Auto-retrain scheduler**:
+  - Retrains immediately if model is stale (>7 days).
+  - Weekly scheduled retrain via APScheduler (user can set day + hour).
+  - Settings page (`/settings/schedule`) with dropdowns for day/hour.
+- Button on Review page linking to retrain schedule settings.
 
-All notable changes to **NAS File Organizer** will be documented here.
-ChatGPT said:
+### Changed
+- Consolidated `web.py` route handling: all custom routes registered directly on `app`.
+- Startup check now runs once at boot and retrains if model is missing/stale.
 
-Perfect — we’ll sync the docs to reflect what you just finished (trainer + retrain endpoint wired, Review confirm moves files, model loop live).
+### Fixed
+- Removed recurring 404s on `/review/retrain` and `/settings/schedule` by standardizing route registration.
 
-📌 Suggested updates
-CHANGELOG.md
-
-Add a new release entry:
 
 ## [0.4.2] - 2025-08-31
 ### Added

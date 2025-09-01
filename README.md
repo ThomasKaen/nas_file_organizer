@@ -130,13 +130,15 @@ This repo includes multiple perspectives on the project:
 - **JOURNAL.md** → personal dev reflections and process notes.  
 - **case_study.md** → portfolio narrative, lessons learned, and impact.
 
-📦📦 Latest Update (2025-08-31)
+📦 Latest Update (2025-09-01)
 
-Phase 4 progressing → retrain loop integrated
+Phase 4 complete → closed-loop + auto scheduler
 
-- Review → confirm/correct items now *move* out of `_Review` into labeled folders
-- Retrain button (POST `/review/retrain`) → trains TF-IDF + Logistic Regression model
-- Model artifact persisted at `/data/model.pkl`
+- Review → confirm/correct items move out of `_Review` into labeled folders
+- Retrain button trains TF-IDF + Logistic Regression model → model.pkl
 - Trainer robust to small datasets (handles single-class gracefully)
-- Hybrid flow (Rules + ML + Review) now fully closed loop
-
+- Auto-retrain:
+  - Retrains weekly at user-chosen schedule (via `/settings/schedule`)
+  - Retrains on startup if model is stale (>7 days)
+- Review page now links directly to schedule settings
+- All custom routes consolidated in `web.py` (no more 404s)

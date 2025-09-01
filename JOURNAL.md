@@ -1,3 +1,22 @@
+2025-09-01 — Phase 4: Auto-Scheduler Completed
+
+Technical milestones
+- Added background scheduler (APScheduler) for weekly retrains.
+- Implemented startup check: retrains immediately if model >7 days old.
+- Created Settings UI (`/settings/schedule`) with day/hour dropdowns.
+- Linked scheduler page from Review for easy access.
+- Cleaned up route chaos → all custom endpoints defined on `app`.
+
+Reflections
+- This closes the loop on true automation: the system now learns continuously without user babysitting.
+- Felt good consolidating the routes after weeks of patchy fixes — the app structure is cleaner and more maintainable.
+- The project has reached the “self-sufficient” threshold: even if I walk away, it will keep improving as users correct files.
+
+Next
+- Phase 5 polish: add metrics panel after retrain, per-class stats, entity extraction for invoices.
+- Prepare portfolio write-up and push 0.4.3 to GitHub.
+
+
 2025-08-31 — Phase 4: Retrain Loop Completed
 
 Technical milestones

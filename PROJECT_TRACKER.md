@@ -24,16 +24,18 @@ Keep this short and moving: shift items between lists as work progresses. Use ch
 - Trainer integrated with Review (`/review/retrain`) → saves model.pkl
 - Confirm/Save moves files out of `_Review` into assigned label folder
 - Robust trainer: handles single-class and few-sample datasets gracefully
+- Auto-retrain scheduler: startup stale check + weekly APScheduler job
+- Settings UI at `/settings/schedule` with day/hour dropdowns
+- Review page button linking to schedule settings
 
 ## 🚧 In Progress (Phase 4)
 - Expose training metrics in logs/UI
-- `nas-train` CLI + cron example for weekly retrain
 - Continue dataset expansion (backfill + review)
 
-## 🔜 Next Up (Phase 4 milestones)
+## 🔜 Next Up (Phase 5 milestones)
 - [ ] Metrics endpoint/UI panel (accuracy, per-class counts, confusion matrix)
-- [ ] CLI: `nas-train` entrypoint
-- [ ] Stretch: multilingual OCR, entity extraction, sub-categories, ruleless mode
+- [ ] CLI: `nas-train` entrypoint for manual/cron retraining
+- [ ] Stretch: multilingual OCR, invoice entity extraction, sub-categories, ruleless mode
 
 ---
 
