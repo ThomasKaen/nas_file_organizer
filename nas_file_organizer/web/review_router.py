@@ -5,6 +5,8 @@ from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from nas_file_organizer.ml.train import train_and_save
 import os, sqlite3, shutil, hashlib, datetime
+from nas_file_organizer.adapters.web import _latest_metrics, _per_class_counts
+
 
 APP_ROOT = Path(__file__).resolve().parents[2]
 templates = Jinja2Templates(directory=str(APP_ROOT / "templates"))
@@ -53,7 +55,8 @@ def review_page(request: Request, only_pending: int = 1):
         "rows": rows,
         "labels": _labels(),
         "archive_root": ARCHIVE_ROOT,
-        "metrics": _last_metrics
+        "metrics": _latest_metrics(),
+        "class_counts": _per_class_counts(),
     })
 
 @router.post("/submit", name="review_confirm")

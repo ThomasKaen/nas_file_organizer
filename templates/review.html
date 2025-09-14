@@ -32,7 +32,36 @@
     </div>
 
     <p class="text-slate-500 text-sm mb-3">Archive root: {{ archive_root }}</p>
+{% if metrics %}
+<div class="bg-white rounded border border-slate-200 p-3 mb-3">
+  <div class="flex flex-wrap gap-4 items-baseline text-sm">
+    <div><span class="font-semibold">Model:</span> {{ metrics.version }}</div>
+    {% if metrics.created_at %}<div><span class="font-semibold">Trained:</span> {{ metrics.created_at }}</div>{% endif %}
+    {% if metrics.samples is not none %}<div><span class="font-semibold">Samples:</span> {{ metrics.samples }}</div>{% endif %}
+    <div><span class="font-semibold">Accuracy:</span>
+      {% if metrics.accuracy is not none %}{{ '%.3f'|format(metrics.accuracy) }}{% else %}n/a{% endif %}
+    </div>
+    <div><span class="font-semibold">Macro-F1:</span>
+      {% if metrics.macro_f1 is not none %}{{ '%.3f'|format(metrics.macro_f1) }}{% else %}n/a{% endif %}
+    </div>
+    {% if metrics.notes %}<div><span class="font-semibold">Notes:</span> {{ metrics.notes }}</div>{% endif %}
+  </div>
 
+  {% if class_counts and class_counts|length > 0 %}
+  <div class="mt-2 text-sm">
+    <span class="font-semibold">Class counts:</span>
+    <ul class="list-disc ml-5 mt-1">
+      {% for label, n in class_counts[:8] %}
+      <li>{{ label }} — {{ n }}</li>
+      {% endfor %}
+      {% if class_counts|length > 8 %}
+      <li>… and {{ class_counts|length - 8 }} more</li>
+      {% endif %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
     <table>
       <thead>
         <tr>
@@ -135,6 +164,12 @@
       <a href="/review?only_pending=0">All</a>
     </div>
   </div>
+  {% if request.query_params.get('retrained') %}
+  <div class="fixed bottom-4 right-4 rounded bg-emerald-500 text-white px-3 py-2 shadow">
+    Model retrained successfully.
+  </div>
+  <script>setTimeout(()=>{ document.querySelector('.fixed.bottom-4.right-4')?.remove(); }, 3000);</script>
+{% endif %}
 
   <script>
     // select all / selection count

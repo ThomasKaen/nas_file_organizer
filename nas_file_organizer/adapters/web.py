@@ -3,10 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List
 from fastapi import FastAPI, Request, BackgroundTasks, Form
-from fastapi.responses import HTMLResponse, RedirectResponse, PlainTextResponse, JSONResponse
+from fastapi.responses import JSONResponse, HTMLResponse, RedirectResponse, PlainTextResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import sqlite3, os, datetime
+import sqlite3, os, datetime, json
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -199,6 +199,57 @@ def _retrain():
 app.add_api_route("/review/retrain", _retrain, methods=["POST"], name="retrain_model")
 app.add_api_route("/review/retrain", _retrain, methods=["GET"],  name="retrain_model_get")
 
+def _latest_metrics():
+    """
+    Read the most recent model registry entry.
+    Tries `ml_models` (our usual) and falls back to `model_registry` if your utils use a different table.
+    """
+    tables_to_try = [
+        ("ml_models", """
+           SELECT version, path, accuracy, macro_f1, samples, classes, notes, created_at
+             FROM ml_models
+            ORDER BY COALESCE(datetime(created_at), datetime('now')) DESC, id DESC
+            LIMIT 1
+        """),
+        ("model_registry", """
+           SELECT version, path, accuracy, macro_f1, samples, classes, notes, created_at
+             FROM model_registry
+            ORDER BY COALESCE(datetime(created_at), datetime('now')) DESC, id DESC
+            LIMIT 1
+        """),
+    ]
+    con = sqlite3.connect(CACHE_DB)
+    con.row_factory = sqlite3.Row
+    for _, sql in tables_to_try:
+        try:
+            row = con.execute(sql).fetchone()
+            if row:
+                return {
+                    "version": row["version"],
+                    "path": row["path"],
+                    "accuracy": row["accuracy"],
+                    "macro_f1": row["macro_f1"],
+                    "samples": row["samples"] if "samples" in row.keys() else None,
+                    "classes": json.loads(row["classes"]) if (row.get("classes")) else [],
+                    "notes": row["notes"] if "notes" in row.keys() else None,
+                    "created_at": row["created_at"] if "created_at" in row.keys() else None,
+                }
+        except Exception:
+            continue
+    return None
+
+def _per_class_counts():
+    """
+    Quick counts from gold labels for a tiny class summary.
+    """
+    try:
+        con = sqlite3.connect(CACHE_DB)
+        con.row_factory = sqlite3.Row
+        rows = con.execute("SELECT label, COUNT(*) AS n FROM ml_labels GROUP BY label ORDER BY n DESC").fetchall()
+        return [(r["label"], r["n"]) for r in rows]
+    except Exception:
+        return []
+
 # Home/dashboard
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
@@ -279,6 +330,11 @@ def _schedule_save(day: str = Form(...), hour: str = Form(...)):
 
 app.add_api_route("/settings/schedule", _schedule_page, methods=["GET"],  response_class=HTMLResponse, name="schedule_page")
 app.add_api_route("/settings/schedule", _schedule_save, methods=["POST"], name="schedule_save")
+
+@app.get("/api/metrics/latest")
+def api_metrics_latest():
+    m = _latest_metrics()
+    return JSONResponse(m or {})
 
 # ===== Startup actions =====
 if _needs_retrain(CACHE_DB, 7):
