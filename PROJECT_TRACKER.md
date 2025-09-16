@@ -28,15 +28,27 @@ Keep this short and moving: shift items between lists as work progresses. Use ch
 - Settings UI at `/settings/schedule` with day/hour dropdowns
 - Review page button linking to schedule settings
 
-## 🚧 In Progress (Phase 4)
-- Expose training metrics in logs/UI
-- Continue dataset expansion (backfill + review)
+✅ Done (Phase 5)
 
-## 🔜 Next Up (Phase 5 milestones)
-- [ ] Metrics endpoint/UI panel (accuracy, per-class counts, confusion matrix)
-- [ ] CLI: `nas-train` entrypoint for manual/cron retraining
-- [ ] Stretch: multilingual OCR, invoice entity extraction, sub-categories, ruleless mode
+Metrics endpoint /api/metrics/latest and metrics card on /review
 
+Path/env alignment for DB/model artifacts
+
+nas-train CLI for manual/cron retraining
+
+Retrain success toast on Review redirect
+
+🔜 Post‑1.0 Backlog
+
+Normalize label names (casing/plural) in data and UI
+
+Add per‑class precision/recall/F1 table and confusion matrix (once dataset grows)
+
+Optional: invoice entity extraction (date, total, VAT) using regex + heuristics
+
+Optional: add updated_at column to ml_models and surface it directly
+
+Optional: multi-language OCR settings (Tesseract packs)
 ---
 
 ## 🧭 Decision Log

@@ -1,5 +1,3 @@
-
-
 🚀 Smart NAS File Organizer
 
 Self-learning file management for NAS and home servers
@@ -18,13 +16,13 @@ Hybrid rules + ML: rules guarantee safety, ML handles edge cases.
 
 Web dashboard: confirm/correct predictions in seconds.
 
-Continuous learning: retrains weekly from corrections.
+Continuous learning: retrains weekly from your corrections.
 
-Language OCR ready (English).
+OCR-ready: English by default (Tesseract installed).
 
 📊 Impact
 
-80–90% auto-classification after first training.
+80–90% auto-classification after the first meaningful training set.
 
 Human corrections become training data → accuracy climbs over time.
 
@@ -32,46 +30,55 @@ Plug-and-play for freelancers, SMBs, or personal NAS users.
 
 🛠 Tech Stack
 
-FastAPI (backend & web dashboard)
-
-Jinja2 (templates)
-
-Docker (deployment)
-
-SQLite (cache + learning store)
-
-scikit-learn (ML classifier)
-
-Python 3
+FastAPI (backend & web dashboard) · Jinja2 (templates) · Docker (deployment) SQLite (cache + learning store) · scikit-learn (ML classifier) · Python 3.13
 
 ⚡ Quickstart
-1. Clone & build
+
+Clone & run
+
 git clone https://github.com/yourusername/nas-file-organizer.git
 cd nas-file-organizer
-docker compose up
+docker compose up -d --build
 
-2. Access the dashboard
+Open dashboard
 
-Open http://localhost:8000
+Visit http://localhost:8000
 
-Upload files into /data/inbox
+Drop files into /data/inbox
 
 Classified files move to /data/archive
 
-3. Train the model
-docker exec -it nas_file_organizer-nas-organizer-1 \
-  python -m app.ml.train \
-  --db /data/cache.db \
-  --archive-root /data/archive \
-  --out /data/model.pkl \
-  --version v1
+Train the model (CLI)
 
-4. Review & correct
+# inside the running container
+docker compose exec nas-organizer nas-train
+# flags (optional):
+# nas-train --db /data/cache.db --out /data/model.pkl --version tfidf-logreg-v1
 
-Visit /review in the dashboard → confirm/correct classifications.
-Corrections feed back into the ML loop automatically.
+Review & correct
+
+Visit /review → approve/correct predictions.
+
+Click Retrain to learn from corrections. A toast confirms success.
+
+Scheduling (optional)
+
+Open /settings/schedule to set a weekly auto-retrain.
+
+📈 Metrics Viewer
+
+After retrain, the Review page shows:
+
+Model version and samples seen
+
+Accuracy and Macro‑F1
+
+Per‑class counts (grows as you correct more files)
+
+If no metrics exist yet, the card shows an empty state until the first retrain finishes.
 
 🗂 Architecture
+
            ┌──────────┐
            │  Inbox   │
            └────┬─────┘
@@ -92,53 +99,46 @@ Corrections feed back into the ML loop automatically.
         │ Review Dashboard │
         └──────────────────┘
 
-📸 Screenshots / Demo
-
-Web UI home
-![Web UI](docs/web_ui.png)
-
-Example log output
-![Web History](docs/web_history.png)
-![Web Log](docs/web_log.png)
-
 🧭 Roadmap
 
- Phase 2: SQLite cache + logging + Review folder
+Phase 2–4 (done): cache + web UI + Docker + hybrid ML + scheduler
 
- Phase 3: Web UI + Docker stable + cross-device moves
+Phase 5 (done): metrics viewer + /api/metrics/latest + nas-train + retrain toast
 
- Phase 4: ML hybrid classifier + feedback loop
+Post‑1.0: label normalization, richer per‑class metrics, optional invoice entity extraction
 
- Stretch: multi-language OCR, invoice entity extraction, “ruleless” high-confidence mode
+🛠 Developer Notes
+
+The Docker image includes curl, wget, and sqlite3 to simplify on‑container debugging.
+
+Ensure both trainer and web share the same data volume: ./data:/data.
+
+Key env vars: CACHE_DB (default /data/cache.db), MODEL_OUT (default /data/model.pkl).
+
 📜 License
 
 This project is licensed under the Prosperity License.
 
-✅ Free for personal, educational, and non-commercial use.
+✅ Free for personal, educational, and non‑commercial use.
 
 ❌ Commercial use requires a license.
 
-See LICENSE.md
- for details.
+See LICENSE.md for details.
 
-## 📚 Documentation Map
+📚 Documentation Map
 
-This repo includes multiple perspectives on the project:
+README.md — product overview and Quickstart
 
-- **README.md** → SaaS-style overview (problem → solution → impact).  
-- **CHANGELOG.md** → structured technical history.  
-- **JOURNAL.md** → personal dev reflections and process notes.  
-- **case_study.md** → portfolio narrative, lessons learned, and impact.
+CHANGELOG.md — technical history
 
-📦 Latest Update (2025-09-01)
+JOURNAL.md — dev log & reflections
 
-Phase 4 complete → closed-loop + auto scheduler
+case_study.md — portfolio narrative and impact
 
-- Review → confirm/correct items move out of `_Review` into labeled folders
-- Retrain button trains TF-IDF + Logistic Regression model → model.pkl
-- Trainer robust to small datasets (handles single-class gracefully)
-- Auto-retrain:
-  - Retrains weekly at user-chosen schedule (via `/settings/schedule`)
-  - Retrains on startup if model is stale (>7 days)
-- Review page now links directly to schedule settings
-- All custom routes consolidated in `web.py` (no more 404s)
+📦 Latest Update (2025-09-16)
+
+Phase 5 complete → metrics viewer, /api/metrics/latest, nas-train CLI, retrain toast
+
+Path/env alignment and route cleanup
+
+Ready for v1.0.0 tag

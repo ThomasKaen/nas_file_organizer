@@ -43,6 +43,20 @@ Review confirm now moves files out of `_Review` into labeled folders and syncs D
 
 Reflection: The hybrid design matters — rules remain as safety net, ML handles messy real-world edge cases. Automation only counts if it frees the user from babysitting — the auto-scheduler closed that gap.
 
+Phase 5 — Metrics & CLI, v1.0 Release
+
+Added /api/metrics/latest endpoint served from SQLite (ml_models, ml_labels).
+
+Implemented Review page metrics card with version, accuracy, macro‑F1, per-class counts, and empty-state fallback.
+
+Added nas-train CLI for manual/headless retraining.
+
+Added small retrain success toast on Review redirect.
+
+Docker image now ships with curl, wget, and sqlite3 for easier debugging.
+
+Reflection: Path consistency was the key. Once trainer + web agreed on /data and queries didn’t assume missing columns, everything clicked. The CLI and metrics viewer gave it that “real product” finish.
+
 💡 Lessons Learned
 
 Persistence beats magic: AI accelerates, but real-world bugs still need hours of grind.
@@ -52,6 +66,8 @@ Rules + ML > either alone: Rules give safety and explainability; ML brings adapt
 Docker debugging is a teacher: real-world behavior surfaces only in realistic environments.
 
 Automation means full loop: review → retrain → schedule. Without self-retraining, “AI” is still just a static script.
+
+Polish counts: metrics card + CLI transformed it from a project into a portfolio-ready product.
 
 🌍 Impact & Portfolio Value
 
@@ -63,17 +79,19 @@ Highlights ability to integrate scheduling, persistence, and UI controls.
 
 Case study material for freelance clients, technical interviews, and portfolio presentations.
 
-🧭 Next Steps (Phase 5)
+🧭 Next Steps (Post‑1.0)
 
-Add polish: metrics panel after retrain (accuracy, per-class counts).
+Normalize label names (casing/plural).
 
-Entity extraction for invoices (dates, totals, companies).
+Add per‑class precision/recall/F1 table and confusion matrix.
 
-Sub-categories and multilingual OCR.
+Optional: invoice entity extraction (dates, totals, companies).
 
-Optional: high-confidence “ruleless mode” for performance.
+Optional: multilingual OCR support.
+
+Optional: high-confidence “ruleless mode.”
 
 ✍️ Personal Reflection
 
-This project wasn’t just about tech. It was also about proving I can take something from idea → messy prototype → polished deliverable and not stop halfway.
+This project wasn’t just about tech. It was about proving I can take something from idea → messy prototype → polished deliverable and not stop halfway. Hitting v1.0.0 felt huge — it’s the first time I can point at a repo and say: this is complete, this works end-to-end.
 Whether for freelance work or WFH opportunities, it’s become a way to show reliability, persistence, and the ability to think in systems, not just code.

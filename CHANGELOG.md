@@ -1,3 +1,33 @@
+Changelog
+[1.0.0] - 2025-09-16
+Added
+
+Metrics viewer card on /review showing model version, samples, accuracy, macro‑F1, and per‑class counts.
+
+/api/metrics/latest endpoint that serves the latest model metrics from SQLite.
+
+nas-train CLI for headless/manual retraining (prints metrics JSON).
+
+Retrain success toast on Review page after POST /review/retrain.
+
+Dev debug tools in Docker image (curl, wget, sqlite3) to ease on‑container inspection.
+
+Changed
+
+Standardized data paths and environment variables so trainer + web read/write the same cache/model locations.
+
+Solidified route registration using a single pattern (no mixed decorator/add_api_route duplicates).
+
+README updated with CLI usage, metrics viewer explanation, and Quickstart streamlined for Docker users.
+
+Fixed
+
+Metrics card not rendering after retrain due to path/env mismatch and missing columns in the previous query.
+
+Intermittent 404s from route double-binding; removed duplicate registrations and ensured ordering.
+
+Empty-state handling on /review so the UI never appears blank even if no metrics are present yet.
+
 # Changelog
 ## [0.4.3] - 2025-09-01
 ### Added

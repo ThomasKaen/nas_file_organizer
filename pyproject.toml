@@ -64,3 +64,4 @@ packages = ["nas_file_organizer"]
 nas-organize = "nas_file_organizer.adapters.cli:main"
 nas-watch    = "nas_file_organizer.adapters.watch:main"
 nas-web      = "nas_file_organizer.adapters.web:main"
+nas-train    = "nas_file_organizer.adapters.train_cli:main"
