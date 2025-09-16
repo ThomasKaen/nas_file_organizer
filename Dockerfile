@@ -1,8 +1,11 @@
 FROM python:3.13-slim
 
-# Install system deps (Tesseract for OCR)
+# Install system deps (Tesseract for OCR + debug tools)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr \
+    sqlite3 \
+    curl \
+    wget \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

@@ -1,11 +1,11 @@
 # nas_file_organizer/web/review_router.py
 from fastapi import APIRouter, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 from nas_file_organizer.ml.train import train_and_save
 import os, sqlite3, shutil, hashlib, datetime
-from nas_file_organizer.adapters.web import _latest_metrics, _per_class_counts
+from nas_file_organizer.web.metrics import latest_metrics, per_class_counts
 
 
 APP_ROOT = Path(__file__).resolve().parents[2]
@@ -55,8 +55,8 @@ def review_page(request: Request, only_pending: int = 1):
         "rows": rows,
         "labels": _labels(),
         "archive_root": ARCHIVE_ROOT,
-        "metrics": _latest_metrics(),
-        "class_counts": _per_class_counts(),
+        "metrics": latest_metrics(),
+        "class_counts": per_class_counts(),
     })
 
 @router.post("/submit", name="review_confirm")
@@ -175,6 +175,6 @@ def create_label(name: str = Form(...)):
 
 @router.post("/review/retrain", name="retrain_model")
 def review_retrain():
-    global _last_metrics
-    _last_metrics = train_and_save(CACHE_DB, MODEL_OUT, os.environ.get("MODEL_VERSION", "tfidf-logreg-v1"))
-    return RedirectResponse(url="/review", status_code=303)
+    from nas_file_organizer.ml.train import train_and_save
+    train_and_save(CACHE_DB, MODEL_OUT, os.environ.get("MODEL_VERSION", "tfidf-logreg-v1"))
+    return RedirectResponse(url="/review?retrained=1", status_code=303)
