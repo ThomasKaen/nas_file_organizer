@@ -1,4 +1,4 @@
-🚀 Smart NAS File Organizer
+🚀 Smart NAS File Organizer V1.0.0
 
 Self-learning file management for NAS and home servers
 
@@ -140,5 +140,3 @@ case_study.md — portfolio narrative and impact
 Phase 5 complete → metrics viewer, /api/metrics/latest, nas-train CLI, retrain toast
 
 Path/env alignment and route cleanup
-
-Ready for v1.0.0 tag
